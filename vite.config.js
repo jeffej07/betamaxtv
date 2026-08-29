@@ -6,5 +6,5 @@ import react from "@vitejs/plugin-react";
 // If you deploy to a custom domain instead, set base back to "/".
 export default defineConfig({
   plugins: [react()],
-  base: "/betamaxtv/",
+  base: "/",
 });
