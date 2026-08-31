@@ -14,8 +14,10 @@ import {
   getDoc,
   collection,
   addDoc,
-  query,
+  query as fsQuery,
   where,
+  orderBy,
+  limit,
   onSnapshot,
   serverTimestamp,
 } from "firebase/firestore";
@@ -121,8 +123,12 @@ function grad(i) {
      desc: "One or two sentence synopsis.",
      rt: 0,        showRt: false,
      imdb: 0,      showImdb: false,
-     embed: "",                // optional per-title video URL; blank uses the default demo embed
+     embed: "",                // optional per-title "Watch Now" video URL — paste any YouTube
+                                // link shape (watch?v=, youtu.be/, /shorts/, or /embed/), same
+                                // as `trailer` below; blank uses the default demo video
      trailer: "",               // optional per-title trailer URL (YouTube watch/share/shorts links all work); blank hides the trailer button
+     download: "",              // optional per-title "Download" link (any URL); blank keeps
+                                 // the Download button as a toast-only placeholder
      seasons: [],               // TV shows only — leave [] to hide the Episodes section entirely.
                                  // Fill in like this to show it:
                                  // seasons: [
@@ -137,55 +143,55 @@ function grad(i) {
    -----------------------------------------------------------
 */
 const TITLES = [
-  { title: "Gohan", poster: "gohan.jpg", type: "movie", category: "Drama", genre: "Thailand", language: "Thailand", year: 2026, quality: ["HD"], desc: "The bonds between humans and animals following a stray dog named Gohan as it moves through life with temporary owners over a decade, through good times and bad times, joy and sorrow, hellos and goodbyes.", rt: 91, showRt: false, imdb: 7.6, showImdb: true, trailer: "https://www.youtube.com/watch?v=upaQ2e1KHKU" },
-  { title: "Hadestown: The Musical",poster: "hadestown.jpg", type: "movie", category: "Drama", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "A musical juxtaposition of the Orpheus/Eurydice and Hades/Persephone myths that examines the way real life can impact our quest for a perfect world.", rt: 78, showRt: false, imdb: 8.6, showImdb: true , trailer: "https://youtu.be/76Q5TWHslOE?si=vjVPy6IORUOT-QQe" },
-  { title: "Batman: Knightfall - Part 1: Knightfall",poster: "BatmanKnightfall.jpg", type: "movie", category: "Adventure", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "When the mysterious behemoth known only as Bane frees Batman's entire rogue's gallery from Arkham Asylum, the Caped Crusader is pushed to his mental and physical breaking point.", rt: 78, showRt: false, imdb: 8.0, showImdb: true , trailer: "https://youtu.be/90HAqMk7qv0?si=vR2rWqMp_RkxAhzI" },
+  { title: "Gohan", poster: "gohan.jpg", type: "movie", category: "Drama", genre: "Thailand", language: "Thailand", year: 2026, quality: ["HD"], desc: "The bonds between humans and animals following a stray dog named Gohan as it moves through life with temporary owners over a decade, through good times and bad times, joy and sorrow, hellos and goodbyes.", rt: 91, showRt: false, imdb: 7.6, showImdb: true, trailer: "https://www.youtube.com/watch?v=upaQ2e1KHKU", embed: "https://bysejikuar.com/e/ozplbhtpfyuc/gohan-2026-1080p-nf-web-dl-ddp5-1-h-264-hbo" ,download: "https://bysejikuar.com/d/ozplbhtpfyuc/gohan-2026-1080p-nf-web-dl-ddp5-1-h-264-hbo" },
+  { title: "Hadestown: The Musical",poster: "hadestown.jpg", type: "movie", category: "Drama", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "A musical juxtaposition of the Orpheus/Eurydice and Hades/Persephone myths that examines the way real life can impact our quest for a perfect world.", rt: 78, showRt: false, imdb: 8.6, showImdb: true , trailer: "https://youtu.be/76Q5TWHslOE?si=vjVPy6IORUOT-QQe", embed: "https://bysejikuar.com/e/f1mxambqaxtg/hadestown-the-musical-2026-1080p-webrip-10bit-ddp5-1-x265-neonoir" ,download: "https://bysejikuar.com/d/f1mxambqaxtg/hadestown-the-musical-2026-1080p-webrip-10bit-ddp5-1-x265-neonoir" },
+  { title: "Batman: Knightfall - Part 1: Knightfall",poster: "BatmanKnightfall.jpg", type: "movie", category: "Adventure", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "When the mysterious behemoth known only as Bane frees Batman's entire rogue's gallery from Arkham Asylum, the Caped Crusader is pushed to his mental and physical breaking point.", rt: 78, showRt: false, imdb: 8.0, showImdb: true , trailer: "https://youtu.be/90HAqMk7qv0?si=vR2rWqMp_RkxAhzI", embed: "https://bysejikuar.com/e/242lwnsbl5mt/batman-knightfall-part-1-knightfall-2026-1080p-webrip-10bit-ddp5-1-x265-neonoir" ,download: "https://bysejikuar.com/d/242lwnsbl5mt/batman-knightfall-part-1-knightfall-2026-1080p-webrip-10bit-ddp5-1-x265-neonoir" },
   { title: "Doraemon: Nobita and the New Castle of the Undersea Devil",poster: "doraemon2026.jpg", type: "movie", category: "Adventure", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "Nobita and friends finds a secret underwater castle packed with mysteries and riches. With Doraemon's high-tech gadgets, they dive into an ocean adventure mixing humor, teamwork, and imagination in a breathtaking aquatic world.", rt: 78, showRt: false, imdb: 6.3, showImdb: true , trailer: "https://youtu.be/dvU9Mv1cfAw?si=HdmP1YNlINc9f8kS" },
-  { title: "Obsession",poster: "obsession.jpg", type: "movie", category: "Horror", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "After breaking the mysterious One Wish Willow to win his crush's heart, a hopeless romantic finds himself getting exactly what he asked for but soon discovers that some desires come at a dark, sinister price.", trailer: "https://youtu.be/gMC8kkwbIQQ?si=gXwcj7WCR0pCSEGw" },
-  { title: "Backrooms",poster: "backrooms.jpg", type: "movie", category: "Horror", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "After a therapist's patient disappears into a dimension beyond reality, she must venture into the unknown to save him.", trailer: "https://youtu.be/0HjdiohVOik?si=u9T7JQvQgJQL0ZuI" },  
-  { title: "Nightborn",poster: "nightborn.jpg", type: "movie", category: "Horror", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "In Finnish forest, Saga and her husband Jon embark on a new chapter as parents. But Saga's joy is overshadowed by a chilling suspicion about their newborn, unbeknownst to Jon, causing a rift as she alone grapples with the disturbing truth", trailer: "https://youtu.be/dWePsu_Kd9c?si=O1zl0g-McgQOx1_l" },
-  { title: "Heretic",poster: "heretic.jpg", type: "movie", category: "Horror", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "Two young Mormon women are drawn into a game of cat-and-mouse in the house of a strange man.", trailer: "https://youtu.be/O9i2vmFhSSY?si=5YcfZydYpNMJYGiq" },
-  { title: "Dogtooth",poster: "dogtooth.jpg", type: "movie", category: "Horror", genre: "English", language: "Greece", year: 2009, quality: ["HD"], desc: "A controlling, manipulative father locks his three adult offspring in a state of perpetual childhood by keeping them prisoner within the sprawling family compound.", trailer: "https://youtu.be/YJe4eZ9l5KY?si=0tpRRpJa3v8aMwEb" },
-  { title: "Michael",poster: "michael.jpg", type: "movie", category: "Horror", language: "English", year: 2026, quality: ["HD"], desc: "The early life of musician Michael Jackson, from the discovery of his talent as the lead of the Jackson Five to the artist whose creative ambition fueled a pursuit to become the biggest entertainer in the world", trailer: "https://youtu.be/3zOLzsbOleM?si=TU8DNPk1KH5Bsaa6" },
-  { title: "Project Hail Mary",poster: "hailmary.jpg", type: "movie", category: "Scifi", language: "English", year: 2026, quality: ["HD"], desc: "A science teacher wakes up alone on a spaceship. As his memory returns, he uncovers a mission to stop a mysterious substance killing Earth's sun, and realizes that an unexpected friendship may be the key.", trailer: "https://youtu.be/m08TxIsFTRI?si=rdADvfSheKDxZxyo" },
-  { title: "Weapons",poster: "weapons.jpg", type: "movie", category: "Folk Horror", language: "English", year: 2026, quality: ["HD"], desc: "When all but one child from the same class mysteriously vanish on the same night at exactly the same time, a community is left questioning who or what is behind their disappearance.", trailer: "https://youtu.be/OpThntO9ixc?si=nu-nji-cevFCSDl6" },
-  { title: "Barbarian",poster: "barbarian.jpg", type: "movie", category: "Folk Horror", language: "English", year: 2022, quality: ["HD"], desc: "A woman staying at an Airbnb discovers that the house she has rented is not what it seems.", trailer: "https://youtu.be/OpThntO9ixc?si=nu-nji-cevFCSDl6" },
-  { title: "Rental Family",poster: "rentalfamily.jpg", type: "movie", category: "Drama", language: "English", year: 2025, quality: ["HD"], desc: "An American actor in Tokyo struggling to find purpose lands an unusual gig: working for a Japanese rental family agency, playing stand-in roles for strangers. He rediscovers purpose, belonging, and the beauty of human connection.", trailer: "https://youtu.be/n0pqP6ClcE8?si=HDvuZW_HvFStauNl" },
-  { title: "The Whale",poster: "thewhale.jpg", type: "movie", category: "Drama", language: "English", year: 2022, quality: ["HD"], desc: "A reclusive, morbidly obese English teacher attempts to reconnect with his estranged teenage daughter.", trailer: "https://youtu.be/D30r0CwtIKc?si=CZjFmhvXFUo1QBKx" },
-  { title: "Hachiko",poster: "hachiko.jpg", type: "movie", category: "Drama", language: "English", year: 2023, quality: ["HD"], desc: "The touching story about a loyal dog who waited for the return of his owner in front of a train station for ten years, even after his owner's death", trailer: "https://youtu.be/D30r0CwtIKc?si=CZjFmhvXFUo1QBKx" },
-  { title: "Grave of the Fireflies",poster: "graveoffireflies.jpg", type: "movie", category: "Drama", language: "English", year: 1988, quality: ["HD"], desc: "A young boy and his little sister struggle to survive in Japan during World War II.", trailer: "https://youtu.be/4vPeTSRd580?si=rWJvQleup7PoR9PI" },
-  { title: "Carolina Caroline",poster: "carolina.jpg", type: "movie", category: "Crime", language: "English", year: 2025, quality: ["HD"], desc: "A young woman joins a charming con man on the run, leaving a trail of crime and passion as they hustle through the Southeast in search of her estranged mother.", trailer: "https://youtu.be/fNdC6SJ-TxY?si=U9q-jN8IA3pBh7de" },
-  { title: "Over Your Dead Body",poster: "over.jpg", type: "movie", category: "Dark Comedy", language: "English", year: 2025, quality: ["HD"], desc: "A dysfunctional married couple retreats to a secluded cabin to repair their relationship, but each secretly plots to murder the other.", trailer: "https://youtu.be/pGxKTIegUZ4?si=MnGMJPLdhv1nlJyg" },
-  { title: "Yesterday",poster: "yesterday.jpg", type: "movie", category: "Romantic Comedy", language: "English", year: 2019, quality: ["HD"], desc: "A struggling musician realizes he's the only person on Earth who can remember The Beatles after waking up in an alternate reality where they never existed.", trailer: "https://youtu.be/pGxKTIegUZ4?si=MnGMJPLdhv1nlJyg" },
-  { title: "Ladies First",poster: "ladysfirst.jpg", type: "movie", category: "Satire Comedy", language: "English", year: 2026, quality: ["HD"], desc: "A male chauvinist is transported to a matriarchal society, facing challenges from a formidable female version of himself.", trailer: "https://youtu.be/oG8D_A1vTfQ?si=ckJY_7-Ff3eQFdQF" },
-  { title: "Eternity",poster: "eternity.jpg", type: "movie", category: "Satire Comedy", language: "English", year: 2026, quality: ["HD"], desc: "In an afterlife where souls have one week to decide where to spend eternity, Joan is faced with the impossible choice between the man she spent her life with and her first love, who died young and has waited decades for her to arrive.", trailer: "https://youtu.be/irXTps1REHU?si=OYPZU4gEIFisdPej" },
-  { title: "Defending Your Life",poster: "defendingyourlife.jpg", type: "movie", category: "Satire Comedy", language: "English", year: 1991, quality: ["HD"], desc: "In an afterlife way-station resembling a major city, the lives of the recently deceased are examined in a court-like setting", trailer: "https://youtu.be/irXTps1REHU?si=OYPZU4gEIFisdPej" },
-  { title: "One Battle After Another",poster: "onebattle.jpg", type: "movie", category: "Dark Comedy", language: "English", year: 1991, quality: ["HD"], desc: "When their enemy resurfaces after 16 years, a group of ex-revolutionaries reunite to rescue the daughter of one of their own.", trailer: "https://youtu.be/irXTps1REHU?si=OYPZU4gEIFisdPej" },
+  { title: "Obsession",poster: "obsession.jpg", type: "movie", category: "Horror", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "After breaking the mysterious One Wish Willow to win his crush's heart, a hopeless romantic finds himself getting exactly what he asked for but soon discovers that some desires come at a dark, sinister price.", trailer: "https://youtu.be/gMC8kkwbIQQ?si=gXwcj7WCR0pCSEGw", embed: "https://bysejikuar.com/e/fs2x3uqg49z6/obsession-2025-720p-webrip-aac-yts-gg-yts-bz" ,download: "https://bysejikuar.com/d/fs2x3uqg49z6/obsession-2025-720p-webrip-aac-yts-gg-yts-bz" },
+  { title: "Backrooms",poster: "backrooms.jpg", type: "movie", category: "Horror", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "After a therapist's patient disappears into a dimension beyond reality, she must venture into the unknown to save him.", trailer: "https://youtu.be/0HjdiohVOik?si=u9T7JQvQgJQL0ZuI", embed: "https://bysejikuar.com/e/mo2sv8kbhh42/backrooms-2026-1080p-hdrip-hevc-x265-bone" ,download: "https://bysejikuar.com/d/mo2sv8kbhh42/backrooms-2026-1080p-hdrip-hevc-x265-bone" },  
+  { title: "Nightborn",poster: "nightborn.jpg", type: "movie", category: "Horror", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "In Finnish forest, Saga and her husband Jon embark on a new chapter as parents. But Saga's joy is overshadowed by a chilling suspicion about their newborn, unbeknownst to Jon, causing a rift as she alone grapples with the disturbing truth", trailer: "https://youtu.be/dWePsu_Kd9c?si=O1zl0g-McgQOx1_l", embed: "https://bysejikuar.com/e/mbzm2fuvnrdl/nightborn-2026-1080p-web-dl-hevc-x265-5-1-bone" ,download: "https://bysejikuar.com/d/mbzm2fuvnrdl/nightborn-2026-1080p-web-dl-hevc-x265-5-1-bone" },
+  { title: "Heretic",poster: "heretic.jpg", type: "movie", category: "Horror", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "Two young Mormon women are drawn into a game of cat-and-mouse in the house of a strange man.", trailer: "https://youtu.be/O9i2vmFhSSY?si=5YcfZydYpNMJYGiq", embed: "https://bysejikuar.com/e/fzv8kj1xn1qf/heretic-2024-1080p-10bit-webrip-6ch-x265-hevc-psa" ,download: "https://bysejikuar.com/d/fzv8kj1xn1qf/heretic-2024-1080p-10bit-webrip-6ch-x265-hevc-psa" },
+  { title: "Dogtooth",poster: "dogtooth.jpg", type: "movie", category: "Horror", genre: "English", language: "Greece", year: 2009, quality: ["HD"], desc: "A controlling, manipulative father locks his three adult offspring in a state of perpetual childhood by keeping them prisoner within the sprawling family compound.", trailer: "https://youtu.be/YJe4eZ9l5KY?si=0tpRRpJa3v8aMwEb", embed: "https://bysejikuar.com/e/50z4sruwirtv/dogtooth-2009-720p-bluray-x264-yts-am" ,download: "https://bysejikuar.com/d/50z4sruwirtv/dogtooth-2009-720p-bluray-x264-yts-am" },
+  { title: "Michael",poster: "michael.jpg", type: "movie", category: "Horror", language: "English", year: 2026, quality: ["HD"], desc: "The early life of musician Michael Jackson, from the discovery of his talent as the lead of the Jackson Five to the artist whose creative ambition fueled a pursuit to become the biggest entertainer in the world", trailer: "https://youtu.be/3zOLzsbOleM?si=TU8DNPk1KH5Bsaa6", embed: "https://bysejikuar.com/e/998urygk8u1e/michael-2026-720p-webrip-aac-yts-bz" ,download: "https://bysejikuar.com/d/998urygk8u1e/michael-2026-720p-webrip-aac-yts-bz" },
+  { title: "Project Hail Mary",poster: "hailmary.jpg", type: "movie", category: "Scifi", language: "English", year: 2026, quality: ["HD"], desc: "A science teacher wakes up alone on a spaceship. As his memory returns, he uncovers a mission to stop a mysterious substance killing Earth's sun, and realizes that an unexpected friendship may be the key.", trailer: "https://youtu.be/m08TxIsFTRI?si=rdADvfSheKDxZxyo", embed: "https://bysejikuar.com/e/301dp8bj9p64/project-hail-mary-2026-imax-720p-webrip-aac-yts-bz" ,download: "https://bysejikuar.com/d/301dp8bj9p64/project-hail-mary-2026-imax-720p-webrip-aac-yts-bz" },
+  { title: "Weapons",poster: "weapons.jpg", type: "movie", category: "Folk Horror", language: "English", year: 2026, quality: ["HD"], desc: "When all but one child from the same class mysteriously vanish on the same night at exactly the same time, a community is left questioning who or what is behind their disappearance.", trailer: "https://youtu.be/OpThntO9ixc?si=nu-nji-cevFCSDl6", embed: "https://bysejikuar.com/e/fv0ul56u8lia/weapons-2025-720p-webrip-aac-yts-mx" ,download: "https://bysejikuar.com/d/fv0ul56u8lia/weapons-2025-720p-webrip-aac-yts-mx" },
+  { title: "Barbarian",poster: "barbarian.jpg", type: "movie", category: "Folk Horror", language: "English", year: 2022, quality: ["HD"], desc: "A woman staying at an Airbnb discovers that the house she has rented is not what it seems.", trailer: "https://youtu.be/Dr89pmKrqkI?si=dkjCrP5nLuLLUDC4", embed: "https://bysejikuar.com/e/ws0rjdel7p5f/barbarian-2022-720p-webrip-aac-yts-mx" ,download: "https://bysejikuar.com/d/ws0rjdel7p5f/barbarian-2022-720p-webrip-aac-yts-mx" },
+  { title: "Rental Family",poster: "rentalfamily.jpg", type: "movie", category: "Drama", language: "English", year: 2025, quality: ["HD"], desc: "An American actor in Tokyo struggling to find purpose lands an unusual gig: working for a Japanese rental family agency, playing stand-in roles for strangers. He rediscovers purpose, belonging, and the beauty of human connection.", trailer: "https://youtu.be/n0pqP6ClcE8?si=HDvuZW_HvFStauNl", embed: "https://bysejikuar.com/e/ilz0ks1vz6sn/rental-family-2025-720p-webrip-aac-yts-bz" ,download: "https://bysejikuar.com/d/ilz0ks1vz6sn/rental-family-2025-720p-webrip-aac-yts-bz" },
+  { title: "The Whale",poster: "thewhale.jpg", type: "movie", category: "Drama", language: "English", year: 2022, quality: ["HD"], desc: "A reclusive, morbidly obese English teacher attempts to reconnect with his estranged teenage daughter.", trailer: "https://youtu.be/D30r0CwtIKc?si=CZjFmhvXFUo1QBKx" , embed: "https://bysejikuar.com/e/xif4x1nc4oes/the-whale-2022-1080p-webrip-1400mb-dd5-1-x264-galaxyrg" ,download: "https://bysejikuar.com/d/xif4x1nc4oes/the-whale-2022-1080p-webrip-1400mb-dd5-1-x264-galaxyrg"},
+  { title: "Hachiko",poster: "hachiko.jpg", type: "movie", category: "Drama", language: "English", year: 2023, quality: ["HD"], desc: "The touching story about a loyal dog who waited for the return of his owner in front of a train station for ten years, even after his owner's death", trailer: "https://youtu.be/QrPyiBGD9nc?si=fKd1ZGBLAeQGk1Lz", embed: "https://bysejikuar.com/e/9al4tj8c7l4v/hachiko-2023-720p-bluray-aac-yts-mx" ,download: "https://bysejikuar.com/d/9al4tj8c7l4v/hachiko-2023-720p-bluray-aac-yts-mx" },
+  { title: "Grave of the Fireflies",poster: "graveoffireflies.jpg", type: "movie", category: "Drama", language: "English", year: 1988, quality: ["HD"], desc: "A young boy and his little sister struggle to survive in Japan during World War II.", trailer: "https://youtu.be/4vPeTSRd580?si=rWJvQleup7PoR9PI", embed: "https://bysejikuar.com/e/wl2sdl01eb62/grave-of-the-fireflies-1988-720p-bluray-x264-yts-am" ,download: "https://bysejikuar.com/d/wl2sdl01eb62/grave-of-the-fireflies-1988-720p-bluray-x264-yts-am" },
+  { title: "Carolina Caroline",poster: "carolina.jpg", type: "movie", category: "Crime", language: "English", year: 2025, quality: ["HD"], desc: "A young woman joins a charming con man on the run, leaving a trail of crime and passion as they hustle through the Southeast in search of her estranged mother.", trailer: "https://youtu.be/fNdC6SJ-TxY?si=U9q-jN8IA3pBh7de", embed: "https://bysejikuar.com/e/3wqspykikbvk/carolina-caroline-2025-720p-webrip-aac-yts-gg-yts-bz" ,download: "https://bysejikuar.com/d/3wqspykikbvk/carolina-caroline-2025-720p-webrip-aac-yts-gg-yts-bz" },
+  { title: "Over Your Dead Body",poster: "over.jpg", type: "movie", category: "Dark Comedy", language: "English", year: 2025, quality: ["HD"], desc: "A dysfunctional married couple retreats to a secluded cabin to repair their relationship, but each secretly plots to murder the other.", trailer: "https://youtu.be/pGxKTIegUZ4?si=MnGMJPLdhv1nlJyg", embed: "https://bysejikuar.com/e/7ifsahl3e97t/over-your-dead-body-2026-720p-webrip-aac-yts-bz" ,download: "https://bysejikuar.com/d/7ifsahl3e97t/over-your-dead-body-2026-720p-webrip-aac-yts-bz" },
+  { title: "Yesterday",poster: "yesterday.jpg", type: "movie", category: "Romantic Comedy", language: "English", year: 2019, quality: ["HD"], desc: "A struggling musician realizes he's the only person on Earth who can remember The Beatles after waking up in an alternate reality where they never existed.", trailer: "https://youtu.be/pGxKTIegUZ4?si=MnGMJPLdhv1nlJyg", embed: "https://youtu.be/6uqvgPm8U4c?si=MQAR5pW7NgwlYkcI" ,download: "https://bysejikuar.com/d/h327zjyqsp4h/yesterday-2019-720p-webrip-800mb-x264-galaxyrg"},
+  { title: "Ladies First",poster: "ladysfirst.jpg", type: "movie", category: "Satire Comedy", language: "English", year: 2026, quality: ["HD"], desc: "A male chauvinist is transported to a matriarchal society, facing challenges from a formidable female version of himself.", trailer: "https://youtu.be/oG8D_A1vTfQ?si=ckJY_7-Ff3eQFdQF", embed: "https://bysejikuar.com/e/axqzmhkxvc6j/ladies-first-2026-720p-webrip-aac-yts-bz" ,download: "https://bysejikuar.com/d/axqzmhkxvc6j/ladies-first-2026-720p-webrip-aac-yts-bz" },
+  { title: "Eternity",poster: "eternity.jpg", type: "movie", category: "Satire Comedy", language: "English", year: 2026, quality: ["HD"], desc: "In an afterlife where souls have one week to decide where to spend eternity, Joan is faced with the impossible choice between the man she spent her life with and her first love, who died young and has waited decades for her to arrive.", trailer: "https://youtu.be/irXTps1REHU?si=OYPZU4gEIFisdPej", embed: "https://bysejikuar.com/e/6oues0hq6qtt/eternity-2025-720p-webrip-aac-yts-lt" ,download: "https://bysejikuar.com/d/6oues0hq6qtt/eternity-2025-720p-webrip-aac-yts-lt" },
+  { title: "Defending Your Life",poster: "defendingyourlife.jpg", type: "movie", category: "Satire Comedy", language: "English", year: 1991, quality: ["HD"], desc: "In an afterlife way-station resembling a major city, the lives of the recently deceased are examined in a court-like setting", trailer: "https://youtu.be/x1FhrhoudSE?si=hweOcgf3gngmrVLB", embed: "https://bysejikuar.com/e/de9hig7whjuv/defending-your-life-1991-restored-bdrip-x264-gazer" ,download: "https://bysejikuar.com/d/de9hig7whjuv/defending-your-life-1991-restored-bdrip-x264-gazer" },
+  { title: "One Battle After Another",poster: "onebattle.jpg", type: "movie", category: "Dark Comedy", language: "English", year: 1991, quality: ["HD"], desc: "When their enemy resurfaces after 16 years, a group of ex-revolutionaries reunite to rescue the daughter of one of their own.", trailer: "https://youtu.be/feOQFKv2Lw4?si=MrYD6c0RR7-pTdWq", embed: "https://bysejikuar.com/e/tqtppg0so096/one-battle-after-another-2025-720p-webrip-aac-yts-mx" ,download: "https://bysejikuar.com/d/tqtppg0so096/one-battle-after-another-2025-720p-webrip-aac-yts-mx" },
 { title: "Avatar: The Last Airbender", poster: "airbendertv.jpg", type: "tv", category: "Dark Comedy", language: "English", year: 1991, quality: ["HD"], desc: "A young boy known as the Avatar must master the four elemental powers to save the world, and fight against an enemy bent on stopping him.", trailer: "https://youtu.be/M_Las484swM?si=G7eZzlb4RoJhb4FZ",
       seasons: [
       {
         season: 1,
         episodes: [
-          { title: "Aang" },
-          { title: "Warriors" },
-          { title: "Omashu" },
-          { title: "Into the Dark" },
-          { title: "Spirited Away" },
-          { title: "Masks" },
-          { title: "The North" },
-          { title: "Legends" },
+          { title: "Aang", url: "https://bysejikuar.com/e/59uh92tp42pf/avatar-the-last-airbender-s01e01-aang" },
+          { title: "Warriors" , url: "https://bysejikuar.com/e/h1zlez6mdj73/avatar-the-last-airbender-s01e02-warriors"},
+          { title: "Omashu", url: "https://bysejikuar.com/e/c6d5wshl8ent/avatar-the-last-airbender-s01e03-omashu" },
+          { title: "Into the Dark", url: "https://bysejikuar.com/e/zrmhgm7mbdu4/avatar-the-last-airbender-s01e04-into-the-dark" },
+          { title: "Spirited Away", url: "https://bysejikuar.com/e/texw3k7gvgbd/avatar-the-last-airbender-s01e05-spirited-away" },
+          { title: "Masks", url: "https://bysejikuar.com/e/8njhm2zi31r2/avatar-the-last-airbender-s01e06-masks" },
+          { title: "The North", url: "https://bysejikuar.com/e/98ocuzlqbu54/avatar-the-last-airbender-s01e07-the-north" },
+          { title: "Legends" , url: "https://bysejikuar.com/e/opkejpkiq5ii/avatar-the-last-airbender-s01e08-legends"},
         ],
       },
       {
         season: 2,
         episodes: [
-          { title: "Somewhere Safe" },
-          { title: "A Fight, Once Begun" },
-          { title: "City of Walls and Secrets" },
-          { title: "The Water Falls, the Stones Emerge" },
-          { title: "Ten Thousand Things" },
-          { title: "The Parable of the Two Dragons" },
-          { title: "Something Broken" },
+          { title: "Somewhere Safe", url: "https://bysejikuar.com/e/cr5gkuzewgsk/avatar-the-last-airbender-s02e01-somewhere-safe" },
+          { title: "A Fight, Once Begun" , url: "https://bysejikuar.com/e/5ia3y4i7vubf/avatar-the-last-airbender-s02e02-a-fight-once-begun"},
+          { title: "City of Walls and Secrets", url: "https://bysejikuar.com/e/s7nsfjhfx36h/avatar-the-last-airbender-s02e03-city-of-walls-and-secrets" },
+          { title: "The Water Falls, the Stones Emerge", url: "https://bysejikuar.com/e/rcl6dsj04s1q/avatar-the-last-airbender-s02e04-the-water-falls-the-stones-emerge" },
+          { title: "Ten Thousand Things", url: "https://bysejikuar.com/e/fpooh3v3szd6/avatar-the-last-airbender-s02e05-ten-thousand-things" },
+          { title: "The Parable of the Two Dragons", url: "https://bysejikuar.com/e/0nxaixd1op53/avatar-the-last-airbender-s02e06-the-parable-of-the-two-dragons" },
+          { title: "Something Broken", url: "https://bysejikuar.com/e/so955gy7aqq1/avatar-the-last-airbender-s02e07-something-broken" },
         ],
       },
     ],
@@ -195,12 +201,12 @@ const TITLES = [
       { 
         season: 1,
         episodes: [
-          { title: "The Hedge Knight" },
-          { title: "Hard Salt Beef" },
-          { title: "The Squire" },
-          { title: "Seven" },
-          { title: "In the Name of the Mother" },
-          { title: "The Morrow" },
+          { title: "The Hedge Knight" , url: "https://bysejikuar.com/e/74gwdhhi2qbl/a-knight-of-the-seven-kingdoms-s01e01-the-hedge-knight"},
+          { title: "Hard Salt Beef", url: "https://bysejikuar.com/e/w03ixt8v6btj/a-knight-of-the-seven-kingdoms-s01e02-hard-salt-beef" },
+          { title: "The Squire" , url: "https://bysejikuar.com/e/r6j9mhmcj404/a-knight-of-the-seven-kingdoms-s01e03-the-squire"},
+          { title: "Seven", url: "https://bysejikuar.com/e/tbdcrtvo5hhk/a-knight-of-the-seven-kingdoms-s01e04-seven" },
+          { title: "In the Name of the Mother", url: "https://bysejikuar.com/e/83vdhg9ejoi2/a-knight-of-the-seven-kingdoms-s01e05-in-the-name-of-the-mother" },
+          { title: "The Morrow", url: "https://bysejikuar.com/e/d07xc4jzvgaa/a-knight-of-the-seven-kingdoms-s01e06-the-morrow" },
         ],
       },
     ],
@@ -218,6 +224,45 @@ function slugify(title) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+/* ---------------------------------------------------------
+   VISITOR ANALYTICS — reads what the browser is willing to tell
+   us about itself (no libraries needed). Used to log each visit
+   to Firestore so we can see real usage across devices.
+--------------------------------------------------------- */
+function getDeviceType() {
+  const ua = navigator.userAgent || "";
+  const isTablet = /iPad|Android(?!.*Mobile)|Tablet/i.test(ua);
+  if (isTablet) return "tablet";
+  const isMobile = /Mobi|Android|iPhone|iPod|IEMobile|BlackBerry|Opera Mini/i.test(ua);
+  if (isMobile) return "mobile";
+  return "desktop";
+}
+
+function getBrowserName() {
+  const ua = navigator.userAgent || "";
+  if (/Edg\//.test(ua)) return "Edge";
+  if (/OPR\//.test(ua) || /Opera/.test(ua)) return "Opera";
+  if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) return "Chrome";
+  if (/Firefox\//.test(ua)) return "Firefox";
+  if (/Safari\//.test(ua) && /Version\//.test(ua)) return "Safari";
+  return "Unknown";
+}
+
+function getOSName() {
+  const ua = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  if (/iPhone|iPad|iPod/.test(ua)) return "iOS";
+  if (/Android/.test(ua)) return "Android";
+  if (/Win/.test(platform) || /Windows/.test(ua)) return "Windows";
+  if (/Mac/.test(platform) && !/iPhone|iPad|iPod/.test(ua)) return "macOS";
+  if (/Linux/.test(platform)) return "Linux";
+  return "Unknown";
+}
+
+function getScreenSize() {
+  return `${window.screen.width}x${window.screen.height}`;
 }
 
 // Unlisted YouTube demo video — swap this per-title later via each item's `embed` field
@@ -269,8 +314,9 @@ const CATALOG = TITLES.map((t, i) => ({
   // Easy poster: use `poster` verbatim if given, otherwise fall back
   // to auto-slugging the title (so old entries keep working).
   poster: `${import.meta.env.BASE_URL}posters/${t.poster && t.poster.trim() ? t.poster.trim() : slugify(t.title) + ".jpg"}`,
-  embed: t.embed && t.embed.trim() ? t.embed.trim() : DEFAULT_EMBED,
+  embed: t.embed && t.embed.trim() ? toYouTubeEmbed(t.embed) : DEFAULT_EMBED,
   trailer: toYouTubeEmbed(t.trailer),
+  download: t.download && t.download.trim() ? t.download.trim() : "",
   seasons: t.seasons || [],
   reviews: t.reviews || [
     { site: "aeyenah.com", url: "https://aeyenah.com/2026/07/01/filmrecensie-gohan/" },
@@ -293,83 +339,233 @@ function randomFrom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// A much bigger, categorized bank of things a "real" viewer might say, so
-// both the ambient background chatter AND replies to real users' messages
-// feel varied instead of the same few lines repeating. Each entry is a
-// function of the relevant title so it can reference it naturally.
+// A much bigger, categorized bank of things a "real" Pinoy viewer might say,
+// so both the ambient background chatter AND replies to real users'
+// messages feel varied instead of the same few lines repeating. Each entry
+// is a function of the relevant title so it can reference it naturally.
+// Mostly Taglish (natural sa mga Pinoy chatroom) with some witty one-liners
+// and jokes mixed in.
 //
 // NOTE: a real AI-powered reply (Gemini via a Cloud Function) is already
 // built and sitting in /functions/index.js, ready to wire back in once
 // the Firebase project is on the Blaze plan — see requestAiReply below
 // for where that would plug back in.
 const CHATTER_BANK = {
+  // Type-agnostic lines — safe for both movies AND TV shows (no "episode"
+  // talk here, since that only makes sense for a show).
   generic: [
-    (t) => `is it just me or is ${t} underrated`,
-    (t) => `rewatching ${t} for the 3rd time lol`,
-    (t) => `just started ${t}, no spoilers pls`,
-    (t) => `can someone recommend something like ${t}`,
-    (t) => `${t} lives in my head rent free`,
-    (t) => `not me putting off sleep for ${t} again`,
-    (t) => `who else cried during ${t}`,
-    (t) => `${t} deserves more hype tbh`,
-    (t) => `the pacing on ${t} is so good`,
-    (t) => `okay but the soundtrack for ${t}??`,
-    (t) => `${t} ruined my whole week (affectionate)`,
-    (t) => `anyone got recs after finishing ${t}`,
-    (t) => `${t} was NOT what i expected going in`,
-    (t) => `three episodes into ${t} and i'm hooked`,
-    (t) => `why does nobody talk about ${t} more`,
+    (t) => `sino pa nanonood ng ${t} ngayon`,
+    (t) => `panoorin ko na naman ${t} for the 3rd time lol`,
+    (t) => `kakastart ko lang ng ${t}, huwag niyo ako i-spoiler`,
+    (t) => `may pareho ba kayo ng peg ng ${t}? pa-recommend`,
+    (t) => `${t} nasa isip ko buong araw, ano ba 'to`,
+    (t) => `di na ko natulog kagabi dahil sa ${t}, sulit naman`,
+    (t) => `sino umiyak dun sa ${t}? ako umiyak`,
+    (t) => `${t} kulang sa hype eh, ang galing nito`,
+    (t) => `yung pacing ng ${t}, ang husay talaga`,
+    (t) => `okay pero yung soundtrack ng ${t}?? sobrang ganda`,
+    (t) => `sinira ng ${t} buong week ko (sa magandang paraan)`,
+    (t) => `may rec ba kayo pagkatapos ng ${t}`,
+    (t) => `hindi ko in-expect na ganito pala ang ${t}`,
+    (t) => `bakit walang nagsasalita tungkol sa ${t}, ang galing nito ah`,
+    (t) => `grabe, sobrang tagal kong hinanap ang ${t}, salamat BetamaxTV`,
+    (t) => `libre pa lang 'to? sana all, ${t} sulit na sulit`,
+  ],
+  // Extra lines that specifically talk about episodes/seasons — only ever
+  // mixed in when the title being discussed is actually a TV show.
+  generic_tv: [
+    (t) => `three episodes pa lang ako sa ${t}, hooked na ko`,
+    (t) => `ilang season na ba ang ${t}? gusto ko lahat mabinge`,
+    (t) => `natapos ko na lahat ng episode ng ${t}, di ako makapaghintay ng bagong season`,
+    (t) => `bingeable talaga ang ${t}, hindi ko kaya mag-isang episode lang`,
+  ],
+  // Extra lines that reference "runtime"/"eksena" style movie talk — mixed
+  // in only when the title is a movie.
+  generic_movie: [
+    (t) => `natapos ko na si ${t}, sulit ang two hours`,
+    (t) => `sobrang bilis lumipas ng oras kay ${t}, ganun kaganda`,
+    (t) => `re-watch mode na naman ako ng ${t}, hindi ako nasasawa`,
   ],
   greeting: [
-    () => "hey everyone 👋",
-    () => "wassup chat",
-    () => "evening everyone, what we watching",
-    () => "just joined, what's the vibe tonight",
-    () => "hii, anything good playing rn",
+    () => "hello mga chat 👋",
+    () => "kamusta chat, ano panoorin natin",
+    () => "magandang gabi mga kapatid, ano na",
+    () => "bagong join lang, ano bang uso dito",
+    () => "hii, meron bang magandang panood ngayon",
   ],
   agree: [
-    (t) => `real, ${t} is so slept on`,
-    (t) => `facts, ${t} deserved better marketing`,
-    () => "literally same",
-    () => "no bc same energy",
-    () => "this thread just gets it",
-    (t) => `${t} agenda is undefeated`,
+    (t) => `totoo, sobrang underrated ng ${t}`,
+    (t) => `tama ka jan, kulang lang sa marketing ang ${t}`,
+    () => "grabe sobrang totoo nyan",
+    () => "same energy, ako din",
+    () => "yan na yan, gets na gets ko",
+    (t) => `${t} gang undefeated`,
   ],
   question_reply: [
-    (t) => `honestly ${t} is a solid pick if you like that`,
-    (t) => `try ${t} next, similar vibe`,
-    () => "depends what mood ur in tbh",
-    () => "i got you, gimme a sec",
-    (t) => `${t} scratched that itch for me`,
+    (t) => `try mo ${t}, solid din yan`,
+    (t) => `depende sa mood mo eh, pero panoorin mo ${t} next`,
+    () => "depende talaga sa peg mo eh",
+    () => "sandali lang, iisipin ko",
+    (t) => `${t} sagot sa uhaw ko sa magandang panood`,
   ],
   spoiler_warning: [
-    () => "no spoilers pls i just started 😭",
-    () => "shhh i haven't gotten there yet",
-    () => "spoiler tag that next time lol",
-    () => "i'm covering my eyes rn",
+    () => "huwag spoiler pls, kakastart ko lang 😭",
+    () => "shh wag mo sabihin, di ko pa dun",
+    () => "spoiler tag mo naman next time",
+    () => "tinatakpan ko mata ko ngayon",
   ],
   praise_reply: [
-    (t) => `right?? ${t} understood the assignment`,
-    () => "fr fr",
-    () => "underrated take but i agree",
-    () => "you're so right for this",
+    (t) => `tama ka, ${t} understood the assignment talaga`,
+    () => "fr fr, sobrang tama",
+    () => "underrated take pero sang-ayon ako",
+    () => "tama ka dyan, galing mo mag-isip",
+  ],
+  // Witty one-liners and jokes riffing on the movie/show — the kind of
+  // banter you'd see in an actual Pinoy livestream chat.
+  joke: [
+    (t) => `sabi ni Mama wag daw manood ng ${t} nang mag-isa... late na 😂`,
+    (t) => `${t} tapos may pasok pa ko bukas, sino may kasalanan dito`,
+    (t) => `nag-log in lang ako para libangin sarili, umiyak pa rin sa ${t}`,
+    (t) => `${t} plot twist level: nanay mo pag may tanong`,
+    (t) => `wag niyo akong tawagin habang nanonood ako ng ${t}, may kaso`,
+    (t) => `libre 'to? akala ko pirated lang pwede ganito ka-sulit`,
+    (t) => `${t} ang tapang mag-drop ng ganyang eksena, hindi ko na kaya puso ko`,
+    (t) => `ilang beses ko na binalikan ang ${t}, di ko na rin bilang`,
+    (t) => `si Kuya nanonood din pala ng ${t}, ang bilis kumalat, sikat na sikat na 'to`,
+    (t) => `${t} tapos yung crush ko chat-mate ko, panalo talaga tonight`,
+  ],
+  // Ambient "feedback" about the BetamaxTV platform itself — mixed in
+  // occasionally so the chat also feels like real user feedback, not just
+  // movie talk.
+  feedback: [
+    () => "ang bilis ng loading dito sa BetamaxTV grabe",
+    () => "sana lagyan din ng dark mode toggle, pero solid na 'to",
+    () => "walang ads?? sulit na sulit ang app na 'to",
+    () => "yung request feature, ginamit ko na, sana madagdagan yung hiling ko",
+    () => "mas mabilis pa 'to kaysa sa datos ko sa bahay HAHA",
   ],
 };
+
+// Genre-specific call-outs, keyed by a normalized version of each title's
+// `category` field. Written like an actual Pinoy viewer hyping up (or
+// warning about) a title to their "Sis/Pre/Mars" in chat.
+const GENRE_CHATTER = {
+  horror: [
+    (t) => `${t} ay sobrang nakakatakot, subukan niyo panoorin! mga Sis!`,
+    (t) => `wag niyo panoorin ang ${t} ng nag-iisa mga Pre, ayoko ng managot`,
+    (t) => `${t} nagpatalon sa akin ng tatlong beses, grabe ka mga Beh`,
+    (t) => `di ko na matulugan ang ${t}, ang lala ng peg mga Sis`,
+    (t) => `${t} horror movie ng taon 'to, sabi ko na sa inyo mga Kuya`,
+  ],
+  "folk horror": [
+    (t) => `${t} creepy sa paraang tahimik lang, sobrang nakakakaba mga Sis`,
+    (t) => `${t} yung tipong horror na di mo alam bakit ka natatakot, ang galing`,
+  ],
+  drama: [
+    (t) => `${t} sobrang lalim ng story, umiyak talaga ako mga Sis`,
+    (t) => `wag kayo manood ng ${t} kung nasa low battery kayo sa emosyon mga Beh`,
+    (t) => `${t} hugot level 100, sobrang relate ko mga Mars`,
+    (t) => `${t} pinaisip ako ng buong gabi, ang bigat ng tema mga Pre`,
+  ],
+  adventure: [
+    (t) => `${t} sobrang saya panoorin, parang kasama mo sa biyahe mga Sis!`,
+    (t) => `${t} sulit sa visuals, tara panoorin natin mga Pre`,
+    (t) => `${t} feel na feel ko yung adventure, ang galing ng cinematography mga Beh`,
+  ],
+  comedy: [
+    (t) => `${t} nakakatawa grabe, halos mahulog ako sa upuan mga Sis`,
+    (t) => `${t} sagot 'to sa stress niyo mga Pre, sobrang saya`,
+  ],
+  thriller: [
+    (t) => `${t} sobrang kaba, di ko mapigilan ang puso ko mga Sis`,
+    (t) => `${t} plot twist sasaktan kayo, promise mga Pre`,
+  ],
+  romance: [
+    (t) => `${t} kinilig ako sobra, sino ba may ganyan crush mga Sis`,
+    (t) => `${t} sweet grabe, feeling ko may love team tayo dito mga Beh`,
+  ],
+  "sci-fi": [
+    (t) => `${t} ang galing ng concept, parang totoo lang mga Pre`,
+    (t) => `${t} nag-iisip ako ng buong araw pagkatapos, deep ang science dito mga Sis`,
+  ],
+  scifi: [
+    (t) => `${t} ang galing ng concept, parang totoo lang mga Pre`,
+    (t) => `${t} nag-iisip ako ng buong araw pagkatapos, deep ang science dito mga Sis`,
+  ],
+  documentary: [
+    (t) => `${t} nakakadagdag talaga ng kaalaman, worth the watch mga Sis`,
+    (t) => `${t} sobrang informative, dapat panoorin ng lahat mga Pre`,
+  ],
+  animation: [
+    (t) => `${t} ang ganda ng animation, para sa bata at matanda mga Beh`,
+    (t) => `${t} nakaka-feel good, ngiti nang ngiti ako mga Sis`,
+  ],
+  musical: [
+    (t) => `${t} ang ganda ng mga kanta, kanta-kanta ako buong panood mga Sis`,
+    (t) => `${t} chills ang production number, panalo mga Pre`,
+  ],
+  crime: [
+    (t) => `${t} sobrang nakaka-engganyo, parang totoong case lang mga Sis`,
+    (t) => `${t} di ko mahulaan sino salarin, galing ng writing mga Pre`,
+  ],
+  "dark comedy": [
+    (t) => `${t} nakakatawa pero nakaka-guilty tumawa, ganun ka-dark mga Sis`,
+    (t) => `${t} sobrang witty, hindi mo alam kung tatawa o mag-iisip ka mga Pre`,
+  ],
+  "dark fantasy": [
+    (t) => `${t} ang lalim ng mundo nito, sobrang immersive mga Sis`,
+    (t) => `${t} may kadiliman pero ang ganda ng storytelling mga Beh`,
+  ],
+  "romantic comedy": [
+    (t) => `${t} nakakakilig at nakakatawa sabay, panalo combo mga Sis`,
+    (t) => `${t} feel good movie 'to, pang-stress reliever mga Beh`,
+  ],
+  "satire comedy": [
+    (t) => `${t} sobrang tapang mag-comment sa lipunan, witty na witty mga Pre`,
+    (t) => `${t} nakakatawa pero may punchline sa totoong buhay mga Sis`,
+  ],
+};
+
+// Turns a title's raw `category` field ("Sci-Fi", "Folk Horror", etc.)
+// into a lowercase key that matches GENRE_CHATTER above.
+function normalizeGenreKey(category) {
+  return (category || "").trim().toLowerCase();
+}
 
 // Very lightweight keyword sniffing so replies at least feel like they're
 // responding to what the user actually said, without needing a real model.
 function classifyMessage(text) {
   const t = text.toLowerCase();
-  if (/\b(hi|hello|hey|sup|yo)\b/.test(t)) return "greeting";
-  if (/spoiler/.test(t)) return "spoiler_warning";
-  if (/\b(recommend|suggest|what should|any good|worth it)\b/.test(t)) return "question_reply";
-  if (/\b(love|amazing|so good|best|great|underrated)\b/.test(t)) return "praise_reply";
+  if (/\b(hi|hello|hey|sup|yo|kamusta|kumusta)\b/.test(t)) return "greeting";
+  if (/spoiler|huwag.*sabihin|wag.*sabihin/.test(t)) return "spoiler_warning";
+  if (/\b(recommend|suggest|what should|any good|worth it|pa-?rec|ano.*panood|magandang panoorin)\b/.test(t)) return "question_reply";
+  if (/\b(love|amazing|so good|best|great|underrated|galing|astig|ang ganda|solid)\b/.test(t)) return "praise_reply";
   if (/\?\s*$/.test(t.trim())) return "question_reply";
-  return Math.random() > 0.5 ? "agree" : "generic";
+  const r = Math.random();
+  if (r < 0.15) return "joke";
+  if (r < 0.22) return "feedback";
+  if (r < 0.4) return "genre";
+  return r < 0.7 ? "agree" : "generic";
 }
 
-function pickChatterLine(category, title) {
-  const bank = CHATTER_BANK[category] || CHATTER_BANK.generic;
+// item is a full catalog entry ({ title, type, category, ... }); we accept
+// a bare string too as a fallback so any leftover callers don't break.
+function pickChatterLine(category, item) {
+  const title = typeof item === "string" ? item : item?.title || "";
+  const type = typeof item === "string" ? null : item?.type;
+  const genreKey = typeof item === "string" ? null : normalizeGenreKey(item?.category);
+
+  if (category === "genre") {
+    const genreBank = genreKey && GENRE_CHATTER[genreKey];
+    if (genreBank) return randomFrom(genreBank)(title);
+    category = "generic"; // no genre-specific lines for this category — fall back
+  }
+
+  let bank = CHATTER_BANK[category] || CHATTER_BANK.generic;
+  if (category === "generic") {
+    if (type === "tv") bank = bank.concat(CHATTER_BANK.generic_tv);
+    else if (type === "movie") bank = bank.concat(CHATTER_BANK.generic_movie);
+  }
   return randomFrom(bank)(title);
 }
 
@@ -388,10 +584,10 @@ function firebaseErrorMessage(err) {
 }
 
 const CHAT_SEED = [
-  { name: "Marielle", text: "anyone else watching Seoul Static rn?? that ending" },
-  { name: "Kenji", text: "Typhoon Season made me cry not gonna lie" },
-  { name: "Pao", text: "is Iron Orchid worth the 4K upgrade" },
-  { name: "Léa", text: "welcome to the chat, be nice to each other 🌿" },
+  { name: "Marielle", text: "Nightborn ay sobrang nakakatakot, subukan niyo panoorin! mga Sis!" },
+  { name: "Kenji", text: "umiyak talaga ako sa The Whale, di ko inexpect na ganun kabigat mga Pre" },
+  { name: "Pao", text: "sulit ba mag-upgrade sa 4K para sa Iron Orchid" },
+  { name: "Léa", text: "welcome sa chat, maging mabait tayo sa isa't isa 🌿" },
 ];
 
 /* ---------------------------------------------------------
@@ -608,24 +804,21 @@ function Hero({ onOpen }) {
   return (
     <section style={{ padding: "56px 0 40px", borderBottom: "1px solid " + T.line }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px" }}>
-        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", color: T.mint, marginBottom: 10 }}>
-          WEEKLY POPULAR
-        </div>
         <h1
           style={{
             fontFamily: "'Jost', sans-serif",
             fontWeight: 700,
-            fontSize: "clamp(32px, 5vw, 54px)",
+            fontSize: "clamp(32px, 6vw, 68px)",
             color: T.paper,
             lineHeight: 1.05,
             margin: 0,
-            maxWidth: 620,
+            maxWidth: 980,
           }}
         >
-          Hot off the reel this week.
+          Mga sikat na Western films at TV shows, bagong drop kada linggo!
         </h1>
-        <p style={{ fontFamily: "'Inter', sans-serif", color: T.pale, fontSize: 15, marginTop: 14, maxWidth: 480 }}>
-          The titles everyone on BetamaxTV is watching, streaming, and arguing about right now.
+        <p style={{ fontFamily: "'Inter', sans-serif", color: T.pale, fontSize: 17, marginTop: 18, maxWidth: 720 }}>
+          Libre ang chill mo dito. Weekend mo, sagot ng BetamaxTV — Ang Bagong Streaming Platform ng Bayan!
         </p>
       </div>
 
@@ -986,7 +1179,20 @@ function SeasonAccordion({ season }) {
               {episodes.map((ep, i) => (
                 <tr key={i} style={{ borderTop: "1px solid " + T.line }}>
                   <td style={episodeTdStyle}>{i + 1}</td>
-                  <td style={{ ...episodeTdStyle, color: T.paper, fontWeight: 600 }}>{ep.title}</td>
+                  <td style={{ ...episodeTdStyle, color: T.paper, fontWeight: 600 }}>
+                    {ep.url ? (
+                      <a
+                        href={ep.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: T.mint, textDecoration: "underline" }}
+                      >
+                        {ep.title}
+                      </a>
+                    ) : (
+                      ep.title
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1400,7 +1606,36 @@ function LiveChat({ open, onClose, messages, onSend, online, user, onAuthOpen })
 /* ---------------------------------------------------------
    HEADER
 --------------------------------------------------------- */
-function Header({ query, setQuery, typeFilter, setTypeFilter, onAdvanced, user, onAuthOpen, onLogout, onLogo, onChatToggle, chatOpen, onResendVerification, resendStatus }) {
+function ChatBadge({ count }) {
+  return (
+    <span
+      className="rp-chat-badge"
+      style={{
+        position: "absolute",
+        top: -6,
+        right: -6,
+        minWidth: 18,
+        height: 18,
+        padding: "0 4px",
+        borderRadius: 999,
+        background: "#ff4d4f",
+        color: "#fff",
+        fontFamily: "'Inter', sans-serif",
+        fontSize: 10.5,
+        fontWeight: 700,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        lineHeight: 1,
+        boxShadow: "0 0 0 2px " + T.ink,
+      }}
+    >
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
+function Header({ query, setQuery, typeFilter, setTypeFilter, onAdvanced, user, onAuthOpen, onLogout, onLogo, onChatToggle, chatOpen, unreadChat, onResendVerification, resendStatus }) {
   return (
     <header
       style={{
@@ -1496,14 +1731,16 @@ function Header({ query, setQuery, typeFilter, setTypeFilter, onAdvanced, user, 
               onClick={onChatToggle}
               style={{
                 ...ghostBtn,
+                position: "relative",
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                borderColor: chatOpen ? T.mint : T.line,
+                borderColor: chatOpen ? T.mint : unreadChat > 0 ? "#ff4d4f" : T.line,
                 color: chatOpen ? T.mint : T.paper,
               }}
             >
               &#128172; Live Chat
+              {!chatOpen && unreadChat > 0 && <ChatBadge count={unreadChat} />}
             </button>
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: T.paper, display: "flex", alignItems: "center", gap: 6 }}>
               Hi, {user.username}
@@ -1545,14 +1782,16 @@ function Header({ query, setQuery, typeFilter, setTypeFilter, onAdvanced, user, 
               onClick={onChatToggle}
               style={{
                 ...ghostBtn,
+                position: "relative",
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                borderColor: chatOpen ? T.mint : T.line,
+                borderColor: chatOpen ? T.mint : unreadChat > 0 ? "#ff4d4f" : T.line,
                 color: chatOpen ? T.mint : T.paper,
               }}
             >
               &#128172; Live Chat
+              {!chatOpen && unreadChat > 0 && <ChatBadge count={unreadChat} />}
             </button>
             <button onClick={() => onAuthOpen("signin")} style={solidBtn}>
               Sign In
@@ -1668,7 +1907,7 @@ function Detail({ item, user, onAuthOpen, onBack, onWatch, onDownload }) {
   useEffect(() => {
     setCommentsLoading(true);
     setCommentsError("");
-    const q = query(collection(db, "comments"), where("titleId", "==", item.id));
+    const q = fsQuery(collection(db, "comments"), where("titleId", "==", item.id));
     const unsub = onSnapshot(
       q,
       (snap) => {
@@ -1851,12 +2090,34 @@ function Detail({ item, user, onAuthOpen, onBack, onWatch, onDownload }) {
 /* ---------------------------------------------------------
    WATCH — the actual video player page
 --------------------------------------------------------- */
+
+
 function Watch({ item, onBack }) {
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 24px 80px" }}>
       <button onClick={onBack} style={{ ...ghostBtn, marginBottom: 20 }}>
         &larr; Back to {item.title}
       </button>
+
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          alignItems: "flex-start",
+          background: "rgba(23,216,151,0.08)",
+          border: "1px solid rgba(23,216,151,0.3)",
+          borderRadius: 10,
+          padding: "14px 18px",
+          marginBottom: 16,
+        }}
+      >
+        <span style={{ fontSize: 22, lineHeight: 1.4, color: "#FFD24C" }}>&#9888;</span>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 15.5, color: T.paper, lineHeight: 1.6, margin: 0 }}>
+          You may need to click the play button <strong style={{ color: "#FFD24C" }}>4&ndash;5 times</strong> before
+          the film starts &mdash; the first few clicks open ads that help keep this site running at no cost to you.
+          Thanks for your patience, and enjoy the film once the player loads!
+        </p>
+      </div>
 
       {item.embed ? (
         <div
@@ -1900,7 +2161,19 @@ function Watch({ item, onBack }) {
         </div>
       )}
 
-      <h1 style={{ fontFamily: "'Jost', sans-serif", fontWeight: 700, fontSize: 26, color: T.paper, margin: "20px 0 6px" }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "20px 0 6px" }}>
+        <Badge>{item.type === "tv" ? "TV Show" : "Movie"}</Badge>
+        <Badge>{item.category}</Badge>
+        <Badge>{item.year}</Badge>
+        <Badge>{item.language}</Badge>
+        {item.quality.map((q) => (
+          <Badge key={q} tone={q === "4K" ? "solid" : "outline"}>
+            {q}
+          </Badge>
+        ))}
+      </div>
+
+      <h1 style={{ fontFamily: "'Jost', sans-serif", fontWeight: 700, fontSize: 26, color: T.paper, margin: "0 0 6px" }}>
         {item.title}
       </h1>
       <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13.5, color: T.pale, maxWidth: 640 }}>{item.desc}</p>
@@ -1908,57 +2181,153 @@ function Watch({ item, onBack }) {
   );
 }
 
-function Footer() {
-  const [email, setEmail] = useState("");
+/* ---------------------------------------------------------
+   REQUEST MODAL — signed-in users can suggest a title to add.
+   Guests are redirected to sign up first (see Footer below).
+--------------------------------------------------------- */
+function RequestModal({ open, onClose, user }) {
+  const [text, setText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+
+  if (!open) return null;
+
+  function handleClose() {
+    onClose();
+    setTimeout(() => {
+      setText("");
+      setError("");
+      setSent(false);
+    }, 200);
+  }
+
+  async function submitRequest(e) {
+    e.preventDefault();
+    if (!text.trim() || submitting || !user) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await addDoc(collection(db, "requests"), {
+        uid: user.uid,
+        username: user.username,
+        text: text.trim().slice(0, 2000),
+        createdAt: serverTimestamp(),
+      });
+      setSent(true);
+    } catch (err) {
+      console.error("Failed to submit request:", err);
+      setError("Couldn't send your request — please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(11,31,27,0.7)",
+        zIndex: 60,
+        display: "flex",
+        alignItems: "flex-start",
+        justifyContent: "center",
+        padding: "60px 20px",
+        overflowY: "auto",
+      }}
+      onClick={handleClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: T.pine,
+          border: "1px solid " + T.line,
+          borderRadius: 14,
+          maxWidth: 520,
+          width: "100%",
+          padding: 32,
+        }}
+      >
+        {sent ? (
+          <div style={{ textAlign: "center", padding: "12px 0" }}>
+            <div style={{ fontSize: 34, marginBottom: 14 }}>&#127881;</div>
+            <h3 style={{ fontFamily: "'Jost', sans-serif", color: T.paper, fontSize: 21, margin: "0 0 10px", fontWeight: 700 }}>
+              Salamat sa iyong request!
+            </h3>
+            <p style={{ fontFamily: "'Inter', sans-serif", color: T.pale, fontSize: 14, margin: "0 0 24px", lineHeight: 1.5 }}>
+              Ire-review namin ito at susubukan naming idagdag ang hiling mo sa lalong madaling panahon.
+            </p>
+            <button onClick={handleClose} style={solidBtn}>
+              Isara
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <h3 style={{ fontFamily: "'Jost', sans-serif", color: T.paper, fontSize: 22, margin: 0, fontWeight: 700 }}>
+                Mag-request ng Panonoorin
+              </h3>
+              <button onClick={handleClose} style={{ all: "unset", cursor: "pointer", color: T.pale, fontSize: 20 }}>
+                &times;
+              </button>
+            </div>
+            <p style={{ fontFamily: "'Inter', sans-serif", color: T.pale, fontSize: 13.5, margin: "0 0 20px" }}>
+              Isulat ang movie o TV show na gusto mong idagdag sa BetamaxTV.
+            </p>
+            <form onSubmit={submitRequest}>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Hal. Squid Game Season 3, Dune Part 3..."
+                rows={6}
+                style={{ ...inputStyle, width: "100%", resize: "vertical", fontFamily: "'Inter', sans-serif" }}
+              />
+              {error && (
+                <div style={{ fontFamily: "'Inter', sans-serif", color: "#ff9d9d", fontSize: 12.5, marginTop: 8 }}>
+                  {error}
+                </div>
+              )}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 18 }}>
+                <button type="submit" style={solidBtn} disabled={submitting || !text.trim()}>
+                  {submitting ? "Sending..." : "Submit your Request"}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Footer({ user, onAuthOpen, onRequestOpen }) {
   return (
     <footer style={{ background: T.ink, borderTop: "1px solid " + T.line, padding: "56px 24px" }}>
-      <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-        <Logo />
-        <h3 style={{ fontFamily: "'Jost', sans-serif", fontWeight: 700, fontSize: 26, color: T.paper, margin: "22px 0 16px", maxWidth: 420 }}>
-          Never miss what&rsquo;s streaming next.
+      <div style={{ maxWidth: 1180, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <Logo />
+        </div>
+        <h3 style={{ fontFamily: "'Jost', sans-serif", fontWeight: 700, fontSize: 26, color: T.paper, margin: "22px auto 20px", maxWidth: 420 }}>
+          Wala ba dito ang hanap mo?
         </h3>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (email) setSent(true);
+        <button
+          onClick={() => (user ? onRequestOpen() : onAuthOpen("signup"))}
+          style={{
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 800,
+            fontSize: 17,
+            letterSpacing: "0.01em",
+            background: T.mint,
+            color: T.charcoal,
+            border: "1px solid " + T.mint,
+            borderRadius: 10,
+            padding: "18px 34px",
+            cursor: "pointer",
           }}
-          style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 30 }}
         >
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@email.com"
-            style={{ ...inputStyle, maxWidth: 260 }}
-          />
-          <button type="submit" style={solidBtn}>
-            {sent ? "Subscribed \u2713" : "Subscribe"}
-          </button>
-        </form>
-        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: T.pale, marginBottom: 14 }}>
-          hello@betamaxtv.stream
-        </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          {["f", "t", "in"].map((s) => (
-            <div
-              key={s}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                border: "1px solid " + T.line,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: "'Inter', sans-serif",
-                fontSize: 12,
-                color: T.pale,
-              }}
-            >
-              {s}
-            </div>
-          ))}
-        </div>
+          File your Request Here!
+        </button>
       </div>
     </footer>
   );
@@ -1981,12 +2350,70 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [toasts, setToasts] = useState([]);
   const [chatOpen, setChatOpen] = useState(false);
-  const [messages, setMessages] = useState(() =>
-    CHAT_SEED.map((m, i) => ({ id: "seed-" + i, name: m.name, text: m.text, self: false }))
+  const [botMessages, setBotMessages] = useState(() =>
+    CHAT_SEED.map((m, i) => ({ id: "seed-" + i, name: m.name, text: m.text, ts: i }))
   );
+  const [chatMessages, setChatMessages] = useState([]);
   const [online, setOnline] = useState(214);
   const [authLoading, setAuthLoading] = useState(true);
   const [resendStatus, setResendStatus] = useState("");
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [unreadChat, setUnreadChat] = useState(0);
+  const prevMsgLenRef = useRef(0);
+  const ipRef = useRef(null);
+  const lastLoggedPageRef = useRef(null);
+
+  // Fetch the visitor's public IP once per session (via a free lookup
+  // service — browsers can't read this directly), then log the first
+  // page view. If the lookup fails (e.g. offline, ad-blocker), we still
+  // log the visit with ip: "unknown" rather than losing the row.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("https://api.ipify.org?format=json")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) ipRef.current = data.ip || "unknown";
+      })
+      .catch(() => {
+        if (!cancelled) ipRef.current = "unknown";
+      })
+      .finally(() => {
+        if (!cancelled) logVisit(view);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Log again whenever the user navigates to a different page/view
+  // (home, detail, watch, etc.) — skipped on first mount since the
+  // effect above already logs it once the IP lookup finishes.
+  useEffect(() => {
+    if (lastLoggedPageRef.current === null) {
+      lastLoggedPageRef.current = view;
+      return;
+    }
+    if (lastLoggedPageRef.current === view) return;
+    lastLoggedPageRef.current = view;
+    logVisit(view);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
+
+  function logVisit(page) {
+    addDoc(collection(db, "analytics"), {
+      page: page || "home",
+      deviceType: getDeviceType(),
+      browser: getBrowserName(),
+      os: getOSName(),
+      screenSize: getScreenSize(),
+      ip: ipRef.current || "unknown",
+      uid: user ? user.uid : null,
+      timestamp: serverTimestamp(),
+    }).catch((err) => {
+      console.error("Failed to log visit:", err);
+    });
+  }
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
@@ -2008,6 +2435,44 @@ export default function App() {
     });
     return () => unsub();
   }, []);
+
+  // Live-subscribe to the global Live Chat feed in Firestore, so real user
+  // messages persist across refreshes and sync in real time for everyone.
+  // Ordered + capped at the query level (single-field orderBy needs no
+  // composite index), newest 100 kept, then re-reversed into chat order.
+  useEffect(() => {
+    const q = fsQuery(collection(db, "chats"), orderBy("createdAt", "desc"), limit(100));
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const rows = snap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            uid: data.uid,
+            name: data.name,
+            text: data.text,
+            ts: data.createdAt?.seconds ? data.createdAt.seconds * 1000 : Date.now(),
+          };
+        });
+        rows.reverse();
+        setChatMessages(rows);
+      },
+      (err) => {
+        console.error("Failed to load live chat:", err);
+      }
+    );
+    return () => unsub();
+  }, []);
+
+  // Merge the simulated ambient "bot" chatter with real Firestore-backed
+  // user messages into one chronological feed for the chat panel.
+  const messages = useMemo(() => {
+    const bot = botMessages.map((m) => ({ ...m, self: false }));
+    const real = chatMessages.map((m) => ({ ...m, self: user ? m.uid === user.uid : false }));
+    return [...bot, ...real].sort((a, b) => a.ts - b.ts);
+  }, [botMessages, chatMessages, user]);
+
 
   useEffect(() => {
     const spawn = () => {
@@ -2034,10 +2499,11 @@ export default function App() {
   useEffect(() => {
     const chatInterval = setInterval(() => {
       const item = randomFrom(catalog);
-      const category = Math.random() < 0.15 ? "greeting" : "generic";
-      setMessages((prev) => [
+      const r = Math.random();
+      const category = r < 0.15 ? "greeting" : r < 0.4 ? "genre" : "generic";
+      setBotMessages((prev) => [
         ...prev,
-        { id: Date.now() + Math.random(), name: randomFrom(FAKE_NAMES), text: pickChatterLine(category, item.title), self: false },
+        { id: Date.now() + Math.random(), name: randomFrom(FAKE_NAMES), text: pickChatterLine(category, item), ts: Date.now() },
       ]);
     }, 14000);
     const onlineInterval = setInterval(() => {
@@ -2049,6 +2515,21 @@ export default function App() {
     };
   }, [catalog]);
 
+  // Track unread live-chat messages: every message added while the panel
+  // is closed bumps the counter; opening the panel clears it.
+  useEffect(() => {
+    const prevLen = prevMsgLenRef.current;
+    const newOnes = messages.slice(prevLen);
+    prevMsgLenRef.current = messages.length;
+    if (!chatOpen && newOnes.some((m) => !m.self)) {
+      setUnreadChat((n) => n + newOnes.filter((m) => !m.self).length);
+    }
+  }, [messages, chatOpen]);
+
+  useEffect(() => {
+    if (chatOpen) setUnreadChat(0);
+  }, [chatOpen]);
+
   function pushToast(name, action, title) {
     const toast = { id: Date.now() + Math.random(), name, action, title };
     setToasts((prev) => [...prev.slice(-2), toast]);
@@ -2058,11 +2539,18 @@ export default function App() {
   }
 
   function sendMessage(text) {
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now() + Math.random(), name: user ? user.username : "Guest", text, self: true },
-    ]);
-    queueFakeReply(text);
+    if (!user) return;
+    const trimmed = text.trim().slice(0, 500);
+    if (!trimmed) return;
+    addDoc(collection(db, "chats"), {
+      uid: user.uid,
+      name: user.username,
+      text: trimmed,
+      createdAt: serverTimestamp(),
+    }).catch((err) => {
+      console.error("Failed to send chat message:", err);
+    });
+    queueFakeReply(trimmed);
   }
 
   // Simulates a reply from a fellow "viewer" using the local CHATTER_BANK +
@@ -2072,14 +2560,14 @@ export default function App() {
   // /functions/index.js — swap this out for that once the Firebase project
   // is on the Blaze plan and the GEMINI_API_KEY secret is set.
   function queueFakeReply(userText) {
-    const currentTitle = catalog.find((v) => v.id === selectedId)?.title || randomFrom(catalog).title;
+    const currentItem = catalog.find((v) => v.id === selectedId) || randomFrom(catalog);
     const category = classifyMessage(userText);
 
     const delay = 700 + Math.random() * 1800;
     setTimeout(() => {
-      setMessages((prev) => [
+      setBotMessages((prev) => [
         ...prev,
-        { id: Date.now() + Math.random(), name: randomFrom(FAKE_NAMES), text: pickChatterLine(category, currentTitle), self: false },
+        { id: Date.now() + Math.random(), name: randomFrom(FAKE_NAMES), text: pickChatterLine(category, currentItem), ts: Date.now() },
       ]);
     }, delay);
 
@@ -2087,9 +2575,9 @@ export default function App() {
     if (Math.random() < 0.35) {
       const delay2 = delay + 900 + Math.random() * 1500;
       setTimeout(() => {
-        setMessages((prev) => [
+        setBotMessages((prev) => [
           ...prev,
-          { id: Date.now() + Math.random(), name: randomFrom(FAKE_NAMES), text: pickChatterLine("agree", currentTitle), self: false },
+          { id: Date.now() + Math.random(), name: randomFrom(FAKE_NAMES), text: pickChatterLine("agree", currentItem), ts: Date.now() },
         ]);
       }, delay2);
     }
@@ -2171,6 +2659,9 @@ export default function App() {
 
   function handleDownload(item) {
     pushToast(user ? user.username : "You", "download", item.title);
+    if (item.download) {
+      window.open(item.download, "_blank", "noopener,noreferrer");
+    }
   }
 
   return (
@@ -2178,6 +2669,8 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Jost:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; background: ${T.ink}; }
+        #root { min-height: 100%; }
         input::placeholder, textarea::placeholder { color: rgba(243,245,240,0.4); }
         .rp-strip { animation: rp-scroll 38s linear infinite; }
         .rp-strip-mask:hover .rp-strip { animation-play-state: paused; }
@@ -2186,6 +2679,11 @@ export default function App() {
           to { transform: translateX(-50%); }
         }
         .rp-poster:hover { transform: translateY(-4px); }
+        .rp-chat-badge { animation: rp-badge-pulse 1.4s ease-in-out infinite; }
+        @keyframes rp-badge-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.18); }
+        }
         .rp-toast { animation: rp-toast-in 0.35s ease; }
         @keyframes rp-toast-in {
           from { opacity: 0; transform: translateY(10px); }
@@ -2214,6 +2712,7 @@ export default function App() {
         onLogo={() => setView("home")}
         onChatToggle={() => setChatOpen((o) => !o)}
         chatOpen={chatOpen}
+        unreadChat={unreadChat}
         onResendVerification={resendVerification}
         resendStatus={resendStatus}
       />
@@ -2241,7 +2740,14 @@ export default function App() {
         )
       )}
 
-      <Footer />
+      <Footer
+        user={user}
+        onAuthOpen={(m) => {
+          setAuthMode(m);
+          setAuthOpen(true);
+        }}
+        onRequestOpen={() => setRequestOpen(true)}
+      />
 
       <FomoToasts toasts={toasts} />
 
@@ -2275,6 +2781,8 @@ export default function App() {
       />
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} onAuth={handleAuth} initialMode={authMode} />
+
+      <RequestModal open={requestOpen} onClose={() => setRequestOpen(false)} user={user} />
     </div>
   );
 }
