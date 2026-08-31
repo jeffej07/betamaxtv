@@ -7,6 +7,7 @@ import {
   onAuthStateChanged,
   updateProfile,
   sendEmailVerification,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import {
   doc,
@@ -143,31 +144,35 @@ function grad(i) {
    -----------------------------------------------------------
 */
 const TITLES = [
+
   { title: "Gohan", poster: "gohan.jpg", type: "movie", category: "Drama", genre: "Thailand", language: "Thailand", year: 2026, quality: ["HD"], desc: "The bonds between humans and animals following a stray dog named Gohan as it moves through life with temporary owners over a decade, through good times and bad times, joy and sorrow, hellos and goodbyes.", rt: 91, showRt: false, imdb: 7.6, showImdb: true, trailer: "https://www.youtube.com/watch?v=upaQ2e1KHKU", embed: "https://bysejikuar.com/e/ozplbhtpfyuc/gohan-2026-1080p-nf-web-dl-ddp5-1-h-264-hbo" ,download: "https://bysejikuar.com/d/ozplbhtpfyuc/gohan-2026-1080p-nf-web-dl-ddp5-1-h-264-hbo" },
   { title: "Hadestown: The Musical",poster: "hadestown.jpg", type: "movie", category: "Drama", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "A musical juxtaposition of the Orpheus/Eurydice and Hades/Persephone myths that examines the way real life can impact our quest for a perfect world.", rt: 78, showRt: false, imdb: 8.6, showImdb: true , trailer: "https://youtu.be/76Q5TWHslOE?si=vjVPy6IORUOT-QQe", embed: "https://bysejikuar.com/e/f1mxambqaxtg/hadestown-the-musical-2026-1080p-webrip-10bit-ddp5-1-x265-neonoir" ,download: "https://bysejikuar.com/d/f1mxambqaxtg/hadestown-the-musical-2026-1080p-webrip-10bit-ddp5-1-x265-neonoir" },
-  { title: "Batman: Knightfall - Part 1: Knightfall",poster: "BatmanKnightfall.jpg", type: "movie", category: "Adventure", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "When the mysterious behemoth known only as Bane frees Batman's entire rogue's gallery from Arkham Asylum, the Caped Crusader is pushed to his mental and physical breaking point.", rt: 78, showRt: false, imdb: 8.0, showImdb: true , trailer: "https://youtu.be/90HAqMk7qv0?si=vR2rWqMp_RkxAhzI", embed: "https://bysejikuar.com/e/242lwnsbl5mt/batman-knightfall-part-1-knightfall-2026-1080p-webrip-10bit-ddp5-1-x265-neonoir" ,download: "https://bysejikuar.com/d/242lwnsbl5mt/batman-knightfall-part-1-knightfall-2026-1080p-webrip-10bit-ddp5-1-x265-neonoir" },
-  { title: "Doraemon: Nobita and the New Castle of the Undersea Devil",poster: "doraemon2026.jpg", type: "movie", category: "Adventure", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "Nobita and friends finds a secret underwater castle packed with mysteries and riches. With Doraemon's high-tech gadgets, they dive into an ocean adventure mixing humor, teamwork, and imagination in a breathtaking aquatic world.", rt: 78, showRt: false, imdb: 6.3, showImdb: true , trailer: "https://youtu.be/dvU9Mv1cfAw?si=HdmP1YNlINc9f8kS" },
+  { title: "Batman: Knightfall - Part 1: Knightfall",poster: "BatmanKnightfall.jpg", type: "movie", category: "Action -Adventure", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "When the mysterious behemoth known only as Bane frees Batman's entire rogue's gallery from Arkham Asylum, the Caped Crusader is pushed to his mental and physical breaking point.", rt: 78, showRt: false, imdb: 8.0, showImdb: true , trailer: "https://youtu.be/90HAqMk7qv0?si=vR2rWqMp_RkxAhzI", embed: "https://bysejikuar.com/e/242lwnsbl5mt/batman-knightfall-part-1-knightfall-2026-1080p-webrip-10bit-ddp5-1-x265-neonoir" ,download: "https://bysejikuar.com/d/242lwnsbl5mt/batman-knightfall-part-1-knightfall-2026-1080p-webrip-10bit-ddp5-1-x265-neonoir" },
+  { title: "Doraemon: Nobita and the New Castle of the Undersea Devil",poster: "doraemon2026.jpg", type: "movie", category: "Action-Adventure", language: "Japanese", year: 2026, quality: ["HD"], desc: "Nobita and friends finds a secret underwater castle packed with mysteries and riches. With Doraemon's high-tech gadgets, they dive into an ocean adventure mixing humor, teamwork, and imagination in a breathtaking aquatic world.", rt: 78, showRt: false, imdb: 6.3, showImdb: true , trailer: "https://youtu.be/dvU9Mv1cfAw?si=HdmP1YNlINc9f8kS", embed: "https://bysejikuar.com/e/ioxu0bs004gw/doraemon-the-movie-new-nobita-and-the-castle-of-the-undersea-devil-2026-1080p-blu-ray-aac-5-1-x264-n3x" ,download: "https://bysejikuar.com/d/ioxu0bs004gw/doraemon-the-movie-new-nobita-and-the-castle-of-the-undersea-devil-2026-1080p-blu-ray-aac-5-1-x264-n3x" },
   { title: "Obsession",poster: "obsession.jpg", type: "movie", category: "Horror", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "After breaking the mysterious One Wish Willow to win his crush's heart, a hopeless romantic finds himself getting exactly what he asked for but soon discovers that some desires come at a dark, sinister price.", trailer: "https://youtu.be/gMC8kkwbIQQ?si=gXwcj7WCR0pCSEGw", embed: "https://bysejikuar.com/e/fs2x3uqg49z6/obsession-2025-720p-webrip-aac-yts-gg-yts-bz" ,download: "https://bysejikuar.com/d/fs2x3uqg49z6/obsession-2025-720p-webrip-aac-yts-gg-yts-bz" },
   { title: "Backrooms",poster: "backrooms.jpg", type: "movie", category: "Horror", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "After a therapist's patient disappears into a dimension beyond reality, she must venture into the unknown to save him.", trailer: "https://youtu.be/0HjdiohVOik?si=u9T7JQvQgJQL0ZuI", embed: "https://bysejikuar.com/e/mo2sv8kbhh42/backrooms-2026-1080p-hdrip-hevc-x265-bone" ,download: "https://bysejikuar.com/d/mo2sv8kbhh42/backrooms-2026-1080p-hdrip-hevc-x265-bone" },  
   { title: "Nightborn",poster: "nightborn.jpg", type: "movie", category: "Horror", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "In Finnish forest, Saga and her husband Jon embark on a new chapter as parents. But Saga's joy is overshadowed by a chilling suspicion about their newborn, unbeknownst to Jon, causing a rift as she alone grapples with the disturbing truth", trailer: "https://youtu.be/dWePsu_Kd9c?si=O1zl0g-McgQOx1_l", embed: "https://bysejikuar.com/e/mbzm2fuvnrdl/nightborn-2026-1080p-web-dl-hevc-x265-5-1-bone" ,download: "https://bysejikuar.com/d/mbzm2fuvnrdl/nightborn-2026-1080p-web-dl-hevc-x265-5-1-bone" },
-  { title: "Heretic",poster: "heretic.jpg", type: "movie", category: "Horror", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "Two young Mormon women are drawn into a game of cat-and-mouse in the house of a strange man.", trailer: "https://youtu.be/O9i2vmFhSSY?si=5YcfZydYpNMJYGiq", embed: "https://bysejikuar.com/e/fzv8kj1xn1qf/heretic-2024-1080p-10bit-webrip-6ch-x265-hevc-psa" ,download: "https://bysejikuar.com/d/fzv8kj1xn1qf/heretic-2024-1080p-10bit-webrip-6ch-x265-hevc-psa" },
+  { title: "Heretic",poster: "heretic.jpg", type: "movie", category: "Horror", genre: "English", language: "English", year: 2024, quality: ["HD"], desc: "Two young Mormon women are drawn into a game of cat-and-mouse in the house of a strange man.", trailer: "https://youtu.be/O9i2vmFhSSY?si=5YcfZydYpNMJYGiq", embed: "https://bysejikuar.com/e/fzv8kj1xn1qf/heretic-2024-1080p-10bit-webrip-6ch-x265-hevc-psa" ,download: "https://bysejikuar.com/d/fzv8kj1xn1qf/heretic-2024-1080p-10bit-webrip-6ch-x265-hevc-psa" },
   { title: "Dogtooth",poster: "dogtooth.jpg", type: "movie", category: "Horror", genre: "English", language: "Greece", year: 2009, quality: ["HD"], desc: "A controlling, manipulative father locks his three adult offspring in a state of perpetual childhood by keeping them prisoner within the sprawling family compound.", trailer: "https://youtu.be/YJe4eZ9l5KY?si=0tpRRpJa3v8aMwEb", embed: "https://bysejikuar.com/e/50z4sruwirtv/dogtooth-2009-720p-bluray-x264-yts-am" ,download: "https://bysejikuar.com/d/50z4sruwirtv/dogtooth-2009-720p-bluray-x264-yts-am" },
-  { title: "Michael",poster: "michael.jpg", type: "movie", category: "Horror", language: "English", year: 2026, quality: ["HD"], desc: "The early life of musician Michael Jackson, from the discovery of his talent as the lead of the Jackson Five to the artist whose creative ambition fueled a pursuit to become the biggest entertainer in the world", trailer: "https://youtu.be/3zOLzsbOleM?si=TU8DNPk1KH5Bsaa6", embed: "https://bysejikuar.com/e/998urygk8u1e/michael-2026-720p-webrip-aac-yts-bz" ,download: "https://bysejikuar.com/d/998urygk8u1e/michael-2026-720p-webrip-aac-yts-bz" },
+  { title: "Michael",poster: "michael.jpg", type: "movie", category: "Biography", language: "English", year: 2026, quality: ["HD"], desc: "The early life of musician Michael Jackson, from the discovery of his talent as the lead of the Jackson Five to the artist whose creative ambition fueled a pursuit to become the biggest entertainer in the world", trailer: "https://youtu.be/3zOLzsbOleM?si=TU8DNPk1KH5Bsaa6", embed: "https://bysejikuar.com/e/998urygk8u1e/michael-2026-720p-webrip-aac-yts-bz" ,download: "https://bysejikuar.com/d/998urygk8u1e/michael-2026-720p-webrip-aac-yts-bz" },
   { title: "Project Hail Mary",poster: "hailmary.jpg", type: "movie", category: "Scifi", language: "English", year: 2026, quality: ["HD"], desc: "A science teacher wakes up alone on a spaceship. As his memory returns, he uncovers a mission to stop a mysterious substance killing Earth's sun, and realizes that an unexpected friendship may be the key.", trailer: "https://youtu.be/m08TxIsFTRI?si=rdADvfSheKDxZxyo", embed: "https://bysejikuar.com/e/301dp8bj9p64/project-hail-mary-2026-imax-720p-webrip-aac-yts-bz" ,download: "https://bysejikuar.com/d/301dp8bj9p64/project-hail-mary-2026-imax-720p-webrip-aac-yts-bz" },
   { title: "Weapons",poster: "weapons.jpg", type: "movie", category: "Folk Horror", language: "English", year: 2026, quality: ["HD"], desc: "When all but one child from the same class mysteriously vanish on the same night at exactly the same time, a community is left questioning who or what is behind their disappearance.", trailer: "https://youtu.be/OpThntO9ixc?si=nu-nji-cevFCSDl6", embed: "https://bysejikuar.com/e/fv0ul56u8lia/weapons-2025-720p-webrip-aac-yts-mx" ,download: "https://bysejikuar.com/d/fv0ul56u8lia/weapons-2025-720p-webrip-aac-yts-mx" },
-  { title: "Barbarian",poster: "barbarian.jpg", type: "movie", category: "Folk Horror", language: "English", year: 2022, quality: ["HD"], desc: "A woman staying at an Airbnb discovers that the house she has rented is not what it seems.", trailer: "https://youtu.be/Dr89pmKrqkI?si=dkjCrP5nLuLLUDC4", embed: "https://bysejikuar.com/e/ws0rjdel7p5f/barbarian-2022-720p-webrip-aac-yts-mx" ,download: "https://bysejikuar.com/d/ws0rjdel7p5f/barbarian-2022-720p-webrip-aac-yts-mx" },
-  { title: "Rental Family",poster: "rentalfamily.jpg", type: "movie", category: "Drama", language: "English", year: 2025, quality: ["HD"], desc: "An American actor in Tokyo struggling to find purpose lands an unusual gig: working for a Japanese rental family agency, playing stand-in roles for strangers. He rediscovers purpose, belonging, and the beauty of human connection.", trailer: "https://youtu.be/n0pqP6ClcE8?si=HDvuZW_HvFStauNl", embed: "https://bysejikuar.com/e/ilz0ks1vz6sn/rental-family-2025-720p-webrip-aac-yts-bz" ,download: "https://bysejikuar.com/d/ilz0ks1vz6sn/rental-family-2025-720p-webrip-aac-yts-bz" },
+  { title: "Barbarian",poster: "barbarian.jpg", type: "movie", category: "Thriller", language: "English", year: 2022, quality: ["HD"], desc: "A woman staying at an Airbnb discovers that the house she has rented is not what it seems.", trailer: "https://youtu.be/Dr89pmKrqkI?si=dkjCrP5nLuLLUDC4", embed: "https://bysejikuar.com/e/ws0rjdel7p5f/barbarian-2022-720p-webrip-aac-yts-mx" ,download: "https://bysejikuar.com/d/ws0rjdel7p5f/barbarian-2022-720p-webrip-aac-yts-mx" },
+  { title: "Rental Family",poster: "rentalfamily.jpg", type: "movie", category: "Family-Drama", language: "English", year: 2025, quality: ["HD"], desc: "An American actor in Tokyo struggling to find purpose lands an unusual gig: working for a Japanese rental family agency, playing stand-in roles for strangers. He rediscovers purpose, belonging, and the beauty of human connection.", trailer: "https://youtu.be/n0pqP6ClcE8?si=HDvuZW_HvFStauNl", embed: "https://bysejikuar.com/e/ilz0ks1vz6sn/rental-family-2025-720p-webrip-aac-yts-bz" ,download: "https://bysejikuar.com/d/ilz0ks1vz6sn/rental-family-2025-720p-webrip-aac-yts-bz" },
   { title: "The Whale",poster: "thewhale.jpg", type: "movie", category: "Drama", language: "English", year: 2022, quality: ["HD"], desc: "A reclusive, morbidly obese English teacher attempts to reconnect with his estranged teenage daughter.", trailer: "https://youtu.be/D30r0CwtIKc?si=CZjFmhvXFUo1QBKx" , embed: "https://bysejikuar.com/e/xif4x1nc4oes/the-whale-2022-1080p-webrip-1400mb-dd5-1-x264-galaxyrg" ,download: "https://bysejikuar.com/d/xif4x1nc4oes/the-whale-2022-1080p-webrip-1400mb-dd5-1-x264-galaxyrg"},
   { title: "Hachiko",poster: "hachiko.jpg", type: "movie", category: "Drama", language: "English", year: 2023, quality: ["HD"], desc: "The touching story about a loyal dog who waited for the return of his owner in front of a train station for ten years, even after his owner's death", trailer: "https://youtu.be/QrPyiBGD9nc?si=fKd1ZGBLAeQGk1Lz", embed: "https://bysejikuar.com/e/9al4tj8c7l4v/hachiko-2023-720p-bluray-aac-yts-mx" ,download: "https://bysejikuar.com/d/9al4tj8c7l4v/hachiko-2023-720p-bluray-aac-yts-mx" },
-  { title: "Grave of the Fireflies",poster: "graveoffireflies.jpg", type: "movie", category: "Drama", language: "English", year: 1988, quality: ["HD"], desc: "A young boy and his little sister struggle to survive in Japan during World War II.", trailer: "https://youtu.be/4vPeTSRd580?si=rWJvQleup7PoR9PI", embed: "https://bysejikuar.com/e/wl2sdl01eb62/grave-of-the-fireflies-1988-720p-bluray-x264-yts-am" ,download: "https://bysejikuar.com/d/wl2sdl01eb62/grave-of-the-fireflies-1988-720p-bluray-x264-yts-am" },
+  { title: "Grave of the Fireflies",poster: "graveoffireflies.jpg", type: "movie", category: "Drama", language: "Japanese", year: 1988, quality: ["HD"], desc: "A young boy and his little sister struggle to survive in Japan during World War II.", trailer: "https://youtu.be/4vPeTSRd580?si=rWJvQleup7PoR9PI", embed: "https://bysejikuar.com/e/wl2sdl01eb62/grave-of-the-fireflies-1988-720p-bluray-x264-yts-am" ,download: "https://bysejikuar.com/d/wl2sdl01eb62/grave-of-the-fireflies-1988-720p-bluray-x264-yts-am" },
   { title: "Carolina Caroline",poster: "carolina.jpg", type: "movie", category: "Crime", language: "English", year: 2025, quality: ["HD"], desc: "A young woman joins a charming con man on the run, leaving a trail of crime and passion as they hustle through the Southeast in search of her estranged mother.", trailer: "https://youtu.be/fNdC6SJ-TxY?si=U9q-jN8IA3pBh7de", embed: "https://bysejikuar.com/e/3wqspykikbvk/carolina-caroline-2025-720p-webrip-aac-yts-gg-yts-bz" ,download: "https://bysejikuar.com/d/3wqspykikbvk/carolina-caroline-2025-720p-webrip-aac-yts-gg-yts-bz" },
-  { title: "Over Your Dead Body",poster: "over.jpg", type: "movie", category: "Dark Comedy", language: "English", year: 2025, quality: ["HD"], desc: "A dysfunctional married couple retreats to a secluded cabin to repair their relationship, but each secretly plots to murder the other.", trailer: "https://youtu.be/pGxKTIegUZ4?si=MnGMJPLdhv1nlJyg", embed: "https://bysejikuar.com/e/7ifsahl3e97t/over-your-dead-body-2026-720p-webrip-aac-yts-bz" ,download: "https://bysejikuar.com/d/7ifsahl3e97t/over-your-dead-body-2026-720p-webrip-aac-yts-bz" },
+  { title: "Over Your Dead Body",poster: "over.jpg", type: "movie", category: "Dark Comedy", language: "English", year: 2026, quality: ["HD"], desc: "A dysfunctional married couple retreats to a secluded cabin to repair their relationship, but each secretly plots to murder the other.", trailer: "https://youtu.be/pGxKTIegUZ4?si=MnGMJPLdhv1nlJyg", embed: "https://bysejikuar.com/e/7ifsahl3e97t/over-your-dead-body-2026-720p-webrip-aac-yts-bz" ,download: "https://bysejikuar.com/d/7ifsahl3e97t/over-your-dead-body-2026-720p-webrip-aac-yts-bz" },
   { title: "Yesterday",poster: "yesterday.jpg", type: "movie", category: "Romantic Comedy", language: "English", year: 2019, quality: ["HD"], desc: "A struggling musician realizes he's the only person on Earth who can remember The Beatles after waking up in an alternate reality where they never existed.", trailer: "https://youtu.be/pGxKTIegUZ4?si=MnGMJPLdhv1nlJyg", embed: "https://youtu.be/6uqvgPm8U4c?si=MQAR5pW7NgwlYkcI" ,download: "https://bysejikuar.com/d/h327zjyqsp4h/yesterday-2019-720p-webrip-800mb-x264-galaxyrg"},
   { title: "Ladies First",poster: "ladysfirst.jpg", type: "movie", category: "Satire Comedy", language: "English", year: 2026, quality: ["HD"], desc: "A male chauvinist is transported to a matriarchal society, facing challenges from a formidable female version of himself.", trailer: "https://youtu.be/oG8D_A1vTfQ?si=ckJY_7-Ff3eQFdQF", embed: "https://bysejikuar.com/e/axqzmhkxvc6j/ladies-first-2026-720p-webrip-aac-yts-bz" ,download: "https://bysejikuar.com/d/axqzmhkxvc6j/ladies-first-2026-720p-webrip-aac-yts-bz" },
-  { title: "Eternity",poster: "eternity.jpg", type: "movie", category: "Satire Comedy", language: "English", year: 2026, quality: ["HD"], desc: "In an afterlife where souls have one week to decide where to spend eternity, Joan is faced with the impossible choice between the man she spent her life with and her first love, who died young and has waited decades for her to arrive.", trailer: "https://youtu.be/irXTps1REHU?si=OYPZU4gEIFisdPej", embed: "https://bysejikuar.com/e/6oues0hq6qtt/eternity-2025-720p-webrip-aac-yts-lt" ,download: "https://bysejikuar.com/d/6oues0hq6qtt/eternity-2025-720p-webrip-aac-yts-lt" },
+  { title: "Eternity",poster: "eternity.jpg", type: "movie", category: "Romantic Comedy", language: "English", year: 2026, quality: ["HD"], desc: "In an afterlife where souls have one week to decide where to spend eternity, Joan is faced with the impossible choice between the man she spent her life with and her first love, who died young and has waited decades for her to arrive.", trailer: "https://youtu.be/irXTps1REHU?si=OYPZU4gEIFisdPej", embed: "https://bysejikuar.com/e/6oues0hq6qtt/eternity-2025-720p-webrip-aac-yts-lt" ,download: "https://bysejikuar.com/d/6oues0hq6qtt/eternity-2025-720p-webrip-aac-yts-lt" },
   { title: "Defending Your Life",poster: "defendingyourlife.jpg", type: "movie", category: "Satire Comedy", language: "English", year: 1991, quality: ["HD"], desc: "In an afterlife way-station resembling a major city, the lives of the recently deceased are examined in a court-like setting", trailer: "https://youtu.be/x1FhrhoudSE?si=hweOcgf3gngmrVLB", embed: "https://bysejikuar.com/e/de9hig7whjuv/defending-your-life-1991-restored-bdrip-x264-gazer" ,download: "https://bysejikuar.com/d/de9hig7whjuv/defending-your-life-1991-restored-bdrip-x264-gazer" },
-  { title: "One Battle After Another",poster: "onebattle.jpg", type: "movie", category: "Dark Comedy", language: "English", year: 1991, quality: ["HD"], desc: "When their enemy resurfaces after 16 years, a group of ex-revolutionaries reunite to rescue the daughter of one of their own.", trailer: "https://youtu.be/feOQFKv2Lw4?si=MrYD6c0RR7-pTdWq", embed: "https://bysejikuar.com/e/tqtppg0so096/one-battle-after-another-2025-720p-webrip-aac-yts-mx" ,download: "https://bysejikuar.com/d/tqtppg0so096/one-battle-after-another-2025-720p-webrip-aac-yts-mx" },
-{ title: "Avatar: The Last Airbender", poster: "airbendertv.jpg", type: "tv", category: "Dark Comedy", language: "English", year: 1991, quality: ["HD"], desc: "A young boy known as the Avatar must master the four elemental powers to save the world, and fight against an enemy bent on stopping him.", trailer: "https://youtu.be/M_Las484swM?si=G7eZzlb4RoJhb4FZ",
+  { title: "One Battle After Another",poster: "onebattle.jpg", type: "movie", category: "Political-Thriller", language: "English", year: 2025, quality: ["HD"], desc: "When their enemy resurfaces after 16 years, a group of ex-revolutionaries reunite to rescue the daughter of one of their own.", trailer: "https://youtu.be/feOQFKv2Lw4?si=MrYD6c0RR7-pTdWq", embed: "https://bysejikuar.com/e/tqtppg0so096/one-battle-after-another-2025-720p-webrip-aac-yts-mx" ,download: "https://bysejikuar.com/d/tqtppg0so096/one-battle-after-another-2025-720p-webrip-aac-yts-mx" },
+  
+  
+
+  { title: "Avatar: The Last Airbender", poster: "airbendertv.jpg", type: "tv", category: "Supernatural-Fantasy", language: "English", year: 2024, quality: ["HD"], desc: "A young boy known as the Avatar must master the four elemental powers to save the world, and fight against an enemy bent on stopping him.", trailer: "https://youtu.be/M_Las484swM?si=G7eZzlb4RoJhb4FZ",
       seasons: [
       {
         season: 1,
@@ -1126,7 +1131,7 @@ const episodeTdStyle = {
    template) — movies and season-less TV entries skip it
    entirely, same pattern as `trailer` / `embed`.
 --------------------------------------------------------- */
-function SeasonAccordion({ season }) {
+function SeasonAccordion({ season, onWatchEpisode }) {
   const [open, setOpen] = useState(false);
   const episodes = season.episodes || [];
 
@@ -1181,14 +1186,20 @@ function SeasonAccordion({ season }) {
                   <td style={episodeTdStyle}>{i + 1}</td>
                   <td style={{ ...episodeTdStyle, color: T.paper, fontWeight: 600 }}>
                     {ep.url ? (
-                      <a
-                        href={ep.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: T.mint, textDecoration: "underline" }}
+                      <button
+                        onClick={() => onWatchEpisode(season, ep)}
+                        style={{
+                          all: "unset",
+                          cursor: "pointer",
+                          color: T.mint,
+                          textDecoration: "underline",
+                          fontFamily: "inherit",
+                          fontSize: "inherit",
+                          fontWeight: "inherit",
+                        }}
                       >
                         {ep.title}
-                      </a>
+                      </button>
                     ) : (
                       ep.title
                     )}
@@ -1216,6 +1227,8 @@ function AuthModal({ open, onClose, onAuth, initialMode }) {
     favShow: "",
   });
   const [signInForm, setSignInForm] = useState({ email: "", password: "" });
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetStatus, setResetStatus] = useState(""); // "" | "sent"
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -1223,6 +1236,7 @@ function AuthModal({ open, onClose, onAuth, initialMode }) {
     if (open) {
       setMode(initialMode || "signup");
       setError("");
+      setResetStatus("");
     }
   }, [open, initialMode]);
 
@@ -1307,6 +1321,23 @@ function AuthModal({ open, onClose, onAuth, initialMode }) {
     setSubmitting(false);
   }
 
+  async function submitReset(e) {
+    e.preventDefault();
+    if (!resetEmail) {
+      setError("Enter your email address.");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      setResetStatus("sent");
+    } catch (err) {
+      setError(firebaseErrorMessage(err));
+    }
+    setSubmitting(false);
+  }
+
   return (
     <div
       style={{
@@ -1341,26 +1372,28 @@ function AuthModal({ open, onClose, onAuth, initialMode }) {
           </button>
         </div>
 
-        <div style={{ display: "flex", gap: 18, marginTop: 20, marginBottom: 20, borderBottom: "1px solid " + T.line }}>
-          {["signup", "signin"].map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              style={{
-                all: "unset",
-                cursor: "pointer",
-                fontFamily: "'Jost', sans-serif",
-                fontWeight: 600,
-                fontSize: 15,
-                paddingBottom: 10,
-                color: mode === m ? T.mint : T.pale,
-                borderBottom: mode === m ? "2px solid " + T.mint : "2px solid transparent",
-              }}
-            >
-              {m === "signup" ? "Create Account" : "Sign In"}
-            </button>
-          ))}
-        </div>
+        {mode !== "forgot" && (
+          <div style={{ display: "flex", gap: 18, marginTop: 20, marginBottom: 20, borderBottom: "1px solid " + T.line }}>
+            {["signup", "signin"].map((m) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                style={{
+                  all: "unset",
+                  cursor: "pointer",
+                  fontFamily: "'Jost', sans-serif",
+                  fontWeight: 600,
+                  fontSize: 15,
+                  paddingBottom: 10,
+                  color: mode === m ? T.mint : T.pale,
+                  borderBottom: mode === m ? "2px solid " + T.mint : "2px solid transparent",
+                }}
+              >
+                {m === "signup" ? "Create Account" : "Sign In"}
+              </button>
+            ))}
+          </div>
+        )}
 
         {error && (
           <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12.5, color: "#E8836B", marginBottom: 14 }}>
@@ -1395,7 +1428,7 @@ function AuthModal({ open, onClose, onAuth, initialMode }) {
               {submitting ? "Creating Account..." : "Create Account"}
             </button>
           </form>
-        ) : (
+        ) : mode === "signin" ? (
           <form onSubmit={submitSignin} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <Field label="Email Address">
               <input type="email" style={inputStyle} value={signInForm.email} onChange={(e) => setSignInForm((f) => ({ ...f, email: e.target.value }))} />
@@ -1403,10 +1436,69 @@ function AuthModal({ open, onClose, onAuth, initialMode }) {
             <Field label="Password">
               <input type="password" style={inputStyle} value={signInForm.password} onChange={(e) => setSignInForm((f) => ({ ...f, password: e.target.value }))} />
             </Field>
+            <button
+              type="button"
+              onClick={() => {
+                setResetEmail(signInForm.email);
+                setResetStatus("");
+                setError("");
+                setMode("forgot");
+              }}
+              style={{
+                all: "unset",
+                cursor: "pointer",
+                alignSelf: "flex-end",
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 12,
+                color: T.mint,
+                marginTop: -6,
+              }}
+            >
+              Forgot password?
+            </button>
             <button type="submit" disabled={submitting} style={{ ...solidBtn, marginTop: 6, width: "100%", opacity: submitting ? 0.7 : 1 }}>
               {submitting ? "Signing In..." : "Sign In"}
             </button>
           </form>
+        ) : (
+          <div>
+            <button
+              onClick={() => {
+                setMode("signin");
+                setError("");
+              }}
+              style={{
+                all: "unset",
+                cursor: "pointer",
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 12.5,
+                color: T.pale,
+                marginBottom: 16,
+                display: "inline-block",
+              }}
+            >
+              &larr; Back to Sign In
+            </button>
+
+            {resetStatus === "sent" ? (
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13.5, color: T.paper, lineHeight: 1.6, margin: 0 }}>
+                If an account exists for <strong style={{ color: T.mint }}>{resetEmail}</strong>, a password reset
+                link is on its way &mdash; check your inbox (and spam folder).
+              </p>
+            ) : (
+              <form onSubmit={submitReset} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12.5, color: T.pale, margin: 0 }}>
+                  Enter the email address on your account and we'll send you a link to reset your password.
+                </p>
+                <Field label="Email Address">
+                  <input type="email" style={inputStyle} value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
+                </Field>
+                <button type="submit" disabled={submitting} style={{ ...solidBtn, marginTop: 6, width: "100%", opacity: submitting ? 0.7 : 1 }}>
+                  {submitting ? "Sending..." : "Send Reset Link"}
+                </button>
+              </form>
+            )}
+          </div>
         )}
 
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11.5, color: T.pale, marginTop: 16, textAlign: "center" }}>
@@ -1885,7 +1977,7 @@ function TrailerModal({ open, onClose, item }) {
   );
 }
 
-function Detail({ item, user, onAuthOpen, onBack, onWatch, onDownload }) {
+function Detail({ item, user, onAuthOpen, onBack, onWatch, onDownload, onWatchEpisode }) {
   const [name, setName] = useState(user ? user.username : "");
   const [text, setText] = useState("");
   const [comments, setComments] = useState([]);
@@ -2024,7 +2116,11 @@ function Detail({ item, user, onAuthOpen, onBack, onWatch, onDownload }) {
             Watch the Episodes
           </h3>
           {item.seasons.map((s) => (
-            <SeasonAccordion key={s.season} season={s} />
+            <SeasonAccordion
+              key={s.season}
+              season={s}
+              onWatchEpisode={(season, ep) => requireAuth(() => onWatchEpisode(item, season, ep))}
+            />
           ))}
         </>
       )}
@@ -2092,11 +2188,11 @@ function Detail({ item, user, onAuthOpen, onBack, onWatch, onDownload }) {
 --------------------------------------------------------- */
 
 
-function Watch({ item, onBack }) {
+function Watch({ item, backLabel, onBack }) {
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 24px 80px" }}>
       <button onClick={onBack} style={{ ...ghostBtn, marginBottom: 20 }}>
-        &larr; Back to {item.title}
+        &larr; Back to {backLabel || item.title}
       </button>
 
       <div
@@ -2348,6 +2444,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState("home");
   const [selectedId, setSelectedId] = useState(null);
+  const [watchEpisode, setWatchEpisode] = useState(null); // { seasonNum, title, url } while watching a specific episode, else null
   const [toasts, setToasts] = useState([]);
   const [chatOpen, setChatOpen] = useState(false);
   const [botMessages, setBotMessages] = useState(() =>
@@ -2653,6 +2750,14 @@ export default function App() {
 
   function handleWatch(item) {
     pushToast(user ? user.username : "You", "watch", item.title);
+    setWatchEpisode(null);
+    setView("watch");
+    window.scrollTo({ top: 0 });
+  }
+
+  function handleWatchEpisode(item, season, ep) {
+    pushToast(user ? user.username : "You", "watch", `${item.title} — ${ep.title}`);
+    setWatchEpisode({ seasonNum: season.season, title: ep.title, url: ep.url });
     setView("watch");
     window.scrollTo({ top: 0 });
   }
@@ -2723,7 +2828,24 @@ export default function App() {
           <Library items={filtered} onOpen={openDetail} typeFilter={typeFilter} />
         </>
       ) : view === "watch" ? (
-        selected && <Watch item={selected} onBack={() => setView("detail")} />
+        selected && (
+          <Watch
+            item={
+              watchEpisode
+                ? {
+                    ...selected,
+                    title: `${selected.title} — S${watchEpisode.seasonNum}: ${watchEpisode.title}`,
+                    embed: watchEpisode.url ? toYouTubeEmbed(watchEpisode.url) : selected.embed,
+                  }
+                : selected
+            }
+            backLabel={selected.title}
+            onBack={() => {
+              setWatchEpisode(null);
+              setView("detail");
+            }}
+          />
+        )
       ) : (
         selected && (
           <Detail
@@ -2736,6 +2858,7 @@ export default function App() {
             onBack={() => setView("home")}
             onWatch={handleWatch}
             onDownload={handleDownload}
+            onWatchEpisode={handleWatchEpisode}
           />
         )
       )}
