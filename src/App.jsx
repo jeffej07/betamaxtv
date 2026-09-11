@@ -33,6 +33,24 @@ import {
    Charcoal: #0B1F1B   deep text on paper
 --------------------------------------------------------- */
 
+/* ---------------------------------------------------------
+   POSTER SIZE — master control
+   Bump this ONE number up or down to resize every poster
+   thumbnail across the site at once — the Library grid, the
+   Hero filmstrip, and the Headlines rows — while keeping their
+   relative sizes to each other the same. 1 = default sizing;
+   1.2 = 20% bigger everywhere; 0.85 = a bit smaller, etc.
+--------------------------------------------------------- */
+const POSTER_SCALE = 2;
+
+// Base sizes (at POSTER_SCALE = 1) for each section — do not edit these
+// directly, change POSTER_SCALE above instead.
+const POSTER_SIZE = {
+  libraryMin: Math.round(150 * POSTER_SCALE), // Library grid: min tile width before wrapping
+  hero: Math.round(200 * POSTER_SCALE),        // Hero filmstrip: fixed tile width
+  headline: Math.round(150 * POSTER_SCALE),    // Headlines rows: fixed tile width
+};
+
 const T = {
   ink: "#04211D",
   pine: "#0C332C",
@@ -856,7 +874,7 @@ function Hero({ onOpen }) {
       <div style={{ marginTop: 32, overflow: "hidden" }} className="rp-strip-mask">
         <div className="rp-strip" style={{ display: "flex", gap: 16, width: "max-content" }}>
           {strip.map((item, idx) => (
-            <div key={idx} style={{ width: 200, flexShrink: 0 }}>
+            <div key={idx} style={{ width: POSTER_SIZE.hero, flexShrink: 0 }}>
               <Poster item={item} onClick={() => onOpen(item.id)} />
             </div>
           ))}
@@ -887,7 +905,7 @@ function Headlines({ onOpen }) {
       {picks.map((item, i) => (
         <div key={item.id}>
           <div style={{ display: "flex", gap: 20, alignItems: "flex-start", padding: "20px 0" }} className="rp-headline-row">
-            <div style={{ width: 150, flexShrink: 0 }}>
+            <div style={{ width: POSTER_SIZE.headline, flexShrink: 0 }}>
               <Poster item={item} onClick={() => onOpen(item.id)} wide />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -1941,7 +1959,7 @@ function Library({ items, onOpen, typeFilter }) {
           No titles match your filters. Try widening your search.
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 18 }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${POSTER_SIZE.libraryMin}px, 1fr))`, gap: 18 }}>
           {items.map((item) => (
             <Poster key={item.id} item={item} onClick={() => onOpen(item.id)} />
           ))}
