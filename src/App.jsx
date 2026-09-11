@@ -144,6 +144,7 @@ function grad(i) {
    -----------------------------------------------------------
 */
 const TITLES = [
+  { title: "Moana", poster: "moana.jpg", type: "movie", category: "Adventure", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "A brave teenager named Moana leaves her island for the first time and sails with a shape-shifting demigod named Maui to fix a dangerous curse.", imdb: 5.8, showImdb: true, trailer: "https://youtu.be/n7f6hlKsxxo?si=3VXiC0wLaF9gTOxl", embed: "https://bysejikuar.com/e/vba2l7tj051a/moana-2026-720p-webrip-aac-yts-gg-yts-bz" ,download: "https://bysejikuar.com/d/vba2l7tj051a/moana-2026-720p-webrip-aac-yts-gg-yts-bz" },  
   { title: "Coyote vs. Acme", poster: "cayote.jpg", type: "movie", category: "Adventure", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "After enduring years of malfunctioning products, Wile E. Coyote teams up with a local personal injury attorney to take on ACME, the manufacturer of anything and everything used by the Looney Tunes characters.", rt: 91, showRt: false, imdb: 7.6, showImdb: true, trailer: "https://youtu.be/H-43VeYGiPM?si=Sk1yW7l7aVu4nuoa", embed: "https://bysejikuar.com/e/ue5zky45hvyu/coyote-vs-acme-2026-1080p-dcp-ddp5-1-h264-aoc" ,download: "https://bysejikuar.com/d/ue5zky45hvyu/coyote-vs-acme-2026-1080p-dcp-ddp5-1-h264-aoc" },
   { title: "Gohan", poster: "gohan.jpg", type: "movie", category: "Drama", genre: "Thailand", language: "Thailand", year: 2026, quality: ["HD"], desc: "The bonds between humans and animals following a stray dog named Gohan as it moves through life with temporary owners over a decade, through good times and bad times, joy and sorrow, hellos and goodbyes.", rt: 91, showRt: false, imdb: 7.6, showImdb: true, trailer: "https://www.youtube.com/watch?v=upaQ2e1KHKU", embed: "https://bysejikuar.com/e/ozplbhtpfyuc/gohan-2026-1080p-nf-web-dl-ddp5-1-h-264-hbo" ,download: "https://bysejikuar.com/d/ozplbhtpfyuc/gohan-2026-1080p-nf-web-dl-ddp5-1-h-264-hbo" },
   { title: "Hadestown: The Musical",poster: "hadestown.jpg", type: "movie", category: "Drama", genre: "English", language: "English", year: 2026, quality: ["HD"], desc: "A musical juxtaposition of the Orpheus/Eurydice and Hades/Persephone myths that examines the way real life can impact our quest for a perfect world.", rt: 78, showRt: false, imdb: 8.6, showImdb: true , trailer: "https://youtu.be/76Q5TWHslOE?si=vjVPy6IORUOT-QQe", embed: "https://bysejikuar.com/e/f1mxambqaxtg/hadestown-the-musical-2026-1080p-webrip-10bit-ddp5-1-x265-neonoir" ,download: "https://bysejikuar.com/d/f1mxambqaxtg/hadestown-the-musical-2026-1080p-webrip-10bit-ddp5-1-x265-neonoir" },
@@ -169,6 +170,7 @@ const TITLES = [
   { title: "Eternity",poster: "eternity.jpg", type: "movie", category: "Romantic Comedy", language: "English", year: 2026, quality: ["HD"], desc: "In an afterlife where souls have one week to decide where to spend eternity, Joan is faced with the impossible choice between the man she spent her life with and her first love, who died young and has waited decades for her to arrive.", trailer: "https://youtu.be/irXTps1REHU?si=OYPZU4gEIFisdPej", embed: "https://bysejikuar.com/e/6oues0hq6qtt/eternity-2025-720p-webrip-aac-yts-lt" ,download: "https://bysejikuar.com/d/6oues0hq6qtt/eternity-2025-720p-webrip-aac-yts-lt" },
   { title: "Defending Your Life",poster: "defendingyourlife.jpg", type: "movie", category: "Satire Comedy", language: "English", year: 1991, quality: ["HD"], desc: "In an afterlife way-station resembling a major city, the lives of the recently deceased are examined in a court-like setting", trailer: "https://youtu.be/x1FhrhoudSE?si=hweOcgf3gngmrVLB", embed: "https://bysejikuar.com/e/de9hig7whjuv/defending-your-life-1991-restored-bdrip-x264-gazer" ,download: "https://bysejikuar.com/d/de9hig7whjuv/defending-your-life-1991-restored-bdrip-x264-gazer" },
   { title: "One Battle After Another",poster: "onebattle.jpg", type: "movie", category: "Political-Thriller", language: "English", year: 2025, quality: ["HD"], desc: "When their enemy resurfaces after 16 years, a group of ex-revolutionaries reunite to rescue the daughter of one of their own.", trailer: "https://youtu.be/feOQFKv2Lw4?si=MrYD6c0RR7-pTdWq", embed: "https://bysejikuar.com/e/tqtppg0so096/one-battle-after-another-2025-720p-webrip-aac-yts-mx" ,download: "https://bysejikuar.com/d/tqtppg0so096/one-battle-after-another-2025-720p-webrip-aac-yts-mx" },
+
   
   
 
@@ -531,6 +533,28 @@ const GENRE_CHATTER = {
   ],
 };
 
+// Title-specific chatter — bespoke lines written for a single hyped title
+// (its cast, marketing angle, premise) instead of the generic/genre banks.
+// Keyed by the exact catalog `title` string. Mixed into the generic pool
+// in pickChatterLine below so these titles get some extra flavor on top
+// of the usual lines.
+const TITLE_CHATTER = {
+  "Moana": [
+    () => "Sino dito ang ready nang maglayag ulit? Grabe, ang ganda ng live-action version na ito!",
+    () => "Si The Rock bilang Maui? Perfect casting talaga, kita agad ang energy!",
+    () => "Ramdam ko na naman ang LSS sa mga kanta. Sino ulit ang LSS sa OST nito?",
+    () => "Ang ganda ng visual effects! Parang gusto ko na rin tuloy mag-explore ng karagatan.",
+    () => "Kwentong pampamilya na naman na pupukaw sa puso natin. Must-watch sa sinehan!",
+  ],
+  "Coyote vs. Acme": [
+    () => "Sa wakas, lumabas na rin ang pelikula ni Wile E. Coyote laban sa ACME! Sobrang nostalgic!",
+    () => "Bistado na ang mga depektibong produkto ng ACME. Courtroom comedy na ito, kaya abang-abang!",
+    () => "Sino paborito mong biktima ng kamalasan noon? Si Coyote o si Road Runner?",
+    () => "Tawa ako nang tawa sa mga tangka niyang hulihin si Road Runner gamit ang mga produkto ng ACME!",
+    () => "Classic childhood cartoon na binigyan ng bagong twist. Panoorin niyo na 'to para sa good vibes!",
+  ],
+};
+
 // Turns a title's raw `category` field ("Sci-Fi", "Folk Horror", etc.)
 // into a lowercase key that matches GENRE_CHATTER above.
 function normalizeGenreKey(category) {
@@ -559,6 +583,7 @@ function pickChatterLine(category, item) {
   const title = typeof item === "string" ? item : item?.title || "";
   const type = typeof item === "string" ? null : item?.type;
   const genreKey = typeof item === "string" ? null : normalizeGenreKey(item?.category);
+  const titleBank = TITLE_CHATTER[title];
 
   if (category === "genre") {
     const genreBank = genreKey && GENRE_CHATTER[genreKey];
@@ -570,6 +595,7 @@ function pickChatterLine(category, item) {
   if (category === "generic") {
     if (type === "tv") bank = bank.concat(CHATTER_BANK.generic_tv);
     else if (type === "movie") bank = bank.concat(CHATTER_BANK.generic_movie);
+    if (titleBank) bank = bank.concat(titleBank); // bespoke lines for this hyped title
   }
   return randomFrom(bank)(title);
 }
